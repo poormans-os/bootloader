@@ -1,11 +1,13 @@
 CLANG := clang-9
 FUSE_LD := lld-link
 
-.PHONY: all clean
-default: all
+.PHONY: all clean run
+
+TARGET := bin/efi/boot/BOOTX64.EFI
 
 SRCS += $(shell find src/ -name '*.c')
 OBJS := $(SRCS:%=obj/%.o)
+
 INCLUDE_DIRS += edk2/MdePkg/Include
 INCLUDE_DIRS += edk2/MdePkg/Include/X64
 
@@ -33,12 +35,15 @@ LDFLAGS := \
 clean:
 	rm -rf bin obj
 
-all: ./bin/efi/boot/BOOTX64.EFI
+all: $(TARGET)
 
-bin/efi/boot/BOOTX64.EFI: $(OBJS)
+$(TARGET): $(OBJS)
 	@mkdir -p $(@D)
 	$(CLANG) $(LDFLAGS) -o $@ $(OBJS)
 
 obj/%.c.o: %.c
 	@mkdir -p $(@D)
 	$(CLANG) $(CFLAGS) -c -o $@ $<
+
+run: $(TARGET)
+	@qemu-system-x86_64.exe -L externals -bios OVMF.fd -hdd fat:rw:bin
