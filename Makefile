@@ -2,6 +2,7 @@ CLANG := clang-9
 FUSE_LD := lld-link
 
 .PHONY: all clean run
+default: all
 
 TARGET := bin/efi/boot/BOOTX64.EFI
 
@@ -15,7 +16,6 @@ CFLAGS := \
 	-target x86_64-unknown-windows \
 	-ffreestanding \
 	-fshort-wchar \
-	-nostdinc \
 	-nostdlib \
 	-std=c11 \
 	-Wall \
@@ -40,6 +40,8 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	@mkdir -p $(@D)
 	$(CLANG) $(LDFLAGS) -o $@ $(OBJS)
+
+remake: clean all
 
 obj/%.c.o: %.c
 	@mkdir -p $(@D)
