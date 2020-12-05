@@ -83,7 +83,7 @@ static bool print(EFI_SYSTEM_TABLE *SystemTable, const char *data, const size_t 
     return true;
 }
 
-char *convert(unsigned int num, const int base)
+char *convert(unsigned long long num, const int base)
 {
     static char Representation[] = "0123456789ABCDEF";
     static char buffer[50];
@@ -156,7 +156,7 @@ int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...)
         {
             //FIXME - implement in a better way
             format++;
-            int d = (char)va_arg(parameters, int /* char promotes to int */);
+            unsigned long long d = (unsigned long long)va_arg(parameters, unsigned long long /* char promotes to int */);
             char *tmp = {0};
             if (!maxrem)
             {
