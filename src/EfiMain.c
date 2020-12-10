@@ -1,6 +1,7 @@
 #include <Uefi.h>
 #include "stdio.h"
 #include "ourLoadFile.h"
+#include "GraphicsOutput.h"
 
 // typedef unsigned char uint8_t;
 // typedef unsigned int uint32_t;
@@ -24,23 +25,107 @@
 //         L"EfiPalCode",
 // };
 
+#define PSF1_MAGIC0 0x36
+#define PSF1_MAGIC1 0x04
+typedef struct PSF1_HEADER
+{
+    UINT8 magic[2];
+    UINT8 mode;
+    UINT8 charsize;
+} PSF1_HEADER;
+
+typedef struct PSF1_FONT
+{
+    PSF1_HEADER *psf1_header;
+    void *glyphBuffer;
+} PSF1_FONT;
+
+PSF1_FONT *LoadPSF1Font(CHAR16 *Path, EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
+{
+    EFI_FILE_PROTOCOL *font = loadfile(Path, ImageHandle, SystemTable);
+    if (font == NULL)
+        return NULL;
+
+    PSF1_HEADER *fontHeader;
+    SystemTable->BootServices->AllocatePool(EfiLoaderData, sizeof(PSF1_HEADER), (void **)&fontHeader);
+    UINTN size = sizeof(PSF1_HEADER);
+    font->Read(font, &size, fontHeader);
+    if (fontHeader->magic[0] != PSF1_MAGIC0 || fontHeader->magic[1] != PSF1_MAGIC1)
+    {
+        return NULL;
+    }
+
+    UINTN glyphBufferSize = fontHeader->charsize * 256;
+    if (fontHeader->mode == 1)
+    {
+        glyphBufferSize = fontHeader->charsize * 512;
+    }
+
+    void *glyphBuffer;
+    font->SetPosition(font, sizeof(PSF1_HEADER));
+    SystemTable->BootServices->AllocatePool(EfiLoaderData, glyphBufferSize, (void **)&glyphBuffer);
+    font->Read(font, &glyphBufferSize, glyphBuffer);
+
+    PSF1_FONT *finishedFont;
+    SystemTable->BootServices->AllocatePool(EfiLoaderData, sizeof(PSF1_FONT), (void **)&finishedFont);
+    finishedFont->psf1_header = fontHeader;
+    finishedFont->glyphBuffer = glyphBuffer;
+    return finishedFont;
+}
+
+typedef struct FRAMEBUFFER
+{
+    void *BaseAddress;
+    UINT64 BufferSize;
+    UINT32 Width;
+    UINT32 Height;
+    UINT32 PixelsPerScanLine;
+} FRAMEBUFFER;
+
+EFI_STATUS initGOP(EFI_SYSTEM_TABLE *SystemTable, FRAMEBUFFER *FrameBuffer)
+{
+    EFI_GUID gopGuid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
+    EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
+    EFI_STATUS status = SystemTable->BootServices->LocateProtocol(&gopGuid, NULL, (void **)&gop);
+    if (status != EFI_SUCCESS)
+        return status;
+    FrameBuffer->BaseAddress = (void *)gop->Mode->FrameBufferBase;
+    FrameBuffer->BufferSize = gop->Mode->FrameBufferSize;
+    FrameBuffer->Width = gop->Mode->Info->HorizontalResolution;
+    FrameBuffer->Height = gop->Mode->Info->VerticalResolution;
+    FrameBuffer->PixelsPerScanLine = gop->Mode->Info->PixelsPerScanLine;
+    return status;
+}
+
 EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
+    FRAMEBUFFER *FrameBuffer = NULL;
+    EFI_FILE_PROTOCOL *test = loadfile(L"test.txt", ImageHandle, SystemTable);
+
+    void *testBuffer;
+    UINT64 fsize = 0x00100000;
+
     SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
     printf(SystemTable, "RUNNING\r\n");
-    EFI_FILE_PROTOCOL *test = loadfile(L"test.txt", ImageHandle, SystemTable);
     if (test == NULL)
     {
         printf(SystemTable, "ERROR\r\n");
     }
     printf(SystemTable, "file addr: %x\r\n", test);
 
-    UINT64 fsize = 0x00100000;
-    void *testBuffer;
     SystemTable->BootServices->AllocatePool(EfiLoaderData, fsize, (void **)&testBuffer);
     test->Read(test, &fsize, testBuffer);
     test->Close(test);
+
     printf(SystemTable, "first 3 letter of \"/test\": %c%c%c", ((char *)testBuffer)[0], ((char *)testBuffer)[1], ((char *)testBuffer)[2]);
+    printf(SystemTable, "\r\n");
+
+    if (initGOP(SystemTable, FrameBuffer) != EFI_SUCCESS)
+        printf(SystemTable, "GOP ERROR\r\n");
+
+    PSF1_FONT *newFont = LoadPSF1Font(L"zap-light16.psf", ImageHandle, SystemTable);
+    if (newFont == NULL)
+        printf(SystemTable, "PSF1 ERROR\r\n");
 
     EFI_STATUS Status;
     EFI_INPUT_KEY Key;

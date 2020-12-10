@@ -9,6 +9,7 @@ TARGET := bin/efi/boot/BOOTX64.EFI
 SRCS += $(shell find src/ -name '*.c')
 OBJS := $(SRCS:%=obj/%.o)
 
+INCLUDE_DIRS += include
 INCLUDE_DIRS += edk2/MdePkg/Include
 INCLUDE_DIRS += edk2/MdePkg/Include/X64
 INCLUDE_DIRS += edk2/MdePkg/Include/Protocol
@@ -40,6 +41,8 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	@mkdir -p $(@D)
+	@echo "asdf" >> bin/test.txt
+	@cp externals/zap-light16.psf bin/zap-light16.psf
 	$(CLANG) $(LDFLAGS) -o $@ $(OBJS)
 
 remake: clean all
