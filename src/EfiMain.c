@@ -34,6 +34,14 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         printf(SystemTable, "ERROR\r\n");
     }
     printf(SystemTable, "file addr: %x\r\n", test);
+
+    UINT64 fsize = 0x00100000;
+    void *testBuffer;
+    SystemTable->BootServices->AllocatePool(EfiLoaderData, fsize, (void **)&testBuffer);
+    test->Read(test, &fsize, testBuffer);
+    test->Close(test);
+    printf(SystemTable, "first 3 letter of \"/test\": %c%c%c", ((char *)testBuffer)[0], ((char *)testBuffer)[1], ((char *)testBuffer)[2]);
+
     EFI_STATUS Status;
     EFI_INPUT_KEY Key;
 
