@@ -2,35 +2,38 @@
 #include "stdio.h"
 #include "ourLoadFile.h"
 
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-typedef unsigned long uint64_t;
+// typedef unsigned char uint8_t;
+// typedef unsigned int uint32_t;
+// typedef unsigned long uint64_t;
 
-const CHAR16 *memory_types[] = 
-{
-    L"EfiReservedMemoryType",
-    L"EfiLoaderCode",
-    L"EfiLoaderData",
-    L"EfiBootServicesCode",
-    L"EfiBootServicesData",
-    L"EfiRuntimeServicesCode",
-    L"EfiRuntimeServicesData",
-    L"EfiConventionalMemory",
-    L"EfiUnusableMemory",
-    L"EfiACPIReclaimMemory",
-    L"EfiACPIMemoryNVS",
-    L"EfiMemoryMappedIO",
-    L"EfiMemoryMappedIOPortSpace",
-    L"EfiPalCode",
-};
+// const CHAR16 *memory_types[] =
+//     {
+//         L"EfiReservedMemoryType",
+//         L"EfiLoaderCode",
+//         L"EfiLoaderData",
+//         L"EfiBootServicesCode",
+//         L"EfiBootServicesData",
+//         L"EfiRuntimeServicesCode",
+//         L"EfiRuntimeServicesData",
+//         L"EfiConventionalMemory",
+//         L"EfiUnusableMemory",
+//         L"EfiACPIReclaimMemory",
+//         L"EfiACPIMemoryNVS",
+//         L"EfiMemoryMappedIO",
+//         L"EfiMemoryMappedIOPortSpace",
+//         L"EfiPalCode",
+// };
 
 EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
-    EFI_FILE_PROTOCOL* test = loadfile(L"test.txt", ImageHandle, SystemTable);
-    if(test == NULL)
+    SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
+    printf(SystemTable, "RUNNING\r\n");
+    EFI_FILE_PROTOCOL *test = loadfile(L"test.txt", ImageHandle, SystemTable);
+    if (test == NULL)
     {
         printf(SystemTable, "ERROR\r\n");
     }
+    printf(SystemTable, "file addr: %x\r\n", test);
     EFI_STATUS Status;
     EFI_INPUT_KEY Key;
 
@@ -41,8 +44,7 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     // SystemTable->ConOut->ClearScreen(SystemTable->ConOut);
     // printf(SystemTable, "Disabling watchdog timer.\r\n");
     // SystemTable->BootServices->SetWatchdogTimer(0, 0, 0, NULL);
-    
-    
+
     // while(EFI_SUCCESS != (Status = SystemTable->BootServices->GetMemoryMap(&mapSize, memoryMap, &mapKey, &descriptorSize, &descriptorVersion)))
     // {
     //     if(Status == EFI_BUFFER_TOO_SMALL)
@@ -50,10 +52,10 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     //         printf(SystemTable, "Setting up memory map buffer.\r\n");
     //         mapSize += 2 * descriptorSize;
     //         SystemTable->BootServices->AllocatePool(EfiLoaderData, mapSize, (void **)&memoryMap);
-    //     } 
+    //     }
     //     else printf(SystemTable, "Error getting memory map: %d.\r\n", Status);
     // }
-    
+
     // if (EFI_ERROR(Status))
     // {
     //     printf(SystemTable, "Get Map Error!\r\n");
@@ -76,7 +78,7 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
     // uint8_t *offset = startOfMemoryMap;
 
-    // uint32_t counter = 0; 
+    // uint32_t counter = 0;
     // uint64_t totalPages = 0;
 
     // EFI_MEMORY_DESCRIPTOR *desc = NULL;
@@ -86,7 +88,7 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     //     desc = (EFI_MEMORY_DESCRIPTOR *)offset;
 
     //     printf(SystemTable, "Map %d:\r\n", counter);
-    //     printf(SystemTable, "  Type: %x, %s\r\n", desc->Type, memory_types[desc->Type]); 
+    //     printf(SystemTable, "  Type: %x, %s\r\n", desc->Type, memory_types[desc->Type]);
     //     printf(SystemTable, "  PhysicalStart: %x\r\n", desc->PhysicalStart);
     //     printf(SystemTable, "  VirtualStart: %x\r\n", desc->VirtualStart);
     //     printf(SystemTable, "  NumberOfPages: %x   (4k)\r\n", desc->NumberOfPages);
