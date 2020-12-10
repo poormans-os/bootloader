@@ -11,6 +11,7 @@ OBJS := $(SRCS:%=obj/%.o)
 
 INCLUDE_DIRS += edk2/MdePkg/Include
 INCLUDE_DIRS += edk2/MdePkg/Include/X64
+INCLUDE_DIRS += edk2/MdePkg/Include/Protocol
 
 CFLAGS := \
 	-target x86_64-unknown-windows \
