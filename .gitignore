@@ -1,4 +1,4 @@
 bin/
 .vscode/
-obj/
+build/
 externals/
