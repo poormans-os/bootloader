@@ -36,16 +36,17 @@ LDFLAGS := \
 	-fuse-ld=$(FUSE_LD)
 
 clean:
-	rm -rf bin build
+	@rm -rf build
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	@mkdir -p $(@D)
-	$(CLANG) $(LDFLAGS) -o $@ $(OBJS)
+	@$(CLANG) $(LDFLAGS) -o $@ $(OBJS)
 
 remake: clean all
 
 build/%.c.o: %.c
 	@mkdir -p $(@D)
-	$(CLANG) $(CFLAGS) -c -o $@ $<
+	@echo "\033[35m[Compiling]\033[0m $@"
+	@$(CLANG) $(CFLAGS) -c -o $@ $<

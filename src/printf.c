@@ -1,6 +1,7 @@
 #include <Uefi.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include "stdio.h"
 
 size_t strlen(const char *str)
 {
@@ -72,7 +73,7 @@ The function prints a simple string and returns if the string was printed proper
 const char* data - string to print
 size_t length - length of string
 */
-static bool print(EFI_SYSTEM_TABLE *SystemTable, const char *data, const size_t length)
+static bool print(const char *data, const size_t length)
 {
     // if (EFI_SUCCESS == )
     //     return true;
@@ -107,7 +108,7 @@ returns how many bytes where written.
 const char* restrict format - string to print
 ... - option to enter several parameters such as integer (%d), float (%f), char (%c), string (%s).
 */
-int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...)
+int printf(const char *restrict format, ...)
 {
     va_list parameters; //list of parameters
     va_start(parameters, format);
@@ -130,7 +131,7 @@ int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...)
                 // TODO: Set errno to EOVERFLOW.
                 return -1;
             }
-            if (!print(SystemTable, format, amount))
+            if (!print(format, amount))
                 return -1;
             format += amount;
             written += amount;
@@ -148,7 +149,7 @@ int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...)
                 // TODO: Set errno to EOVERFLOW.
                 return -1;
             }
-            if (!print(SystemTable, &c, sizeof(c)))
+            if (!print(&c, sizeof(c)))
                 return -1;
             written++;
         }
@@ -164,7 +165,7 @@ int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...)
                 return -1;
             }
             tmp = convert(d, 16);
-            if (!print(SystemTable, tmp, strlen(tmp)))
+            if (!print(tmp, strlen(tmp)))
                 return -1;
             written++;
         }
@@ -180,7 +181,7 @@ int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...)
                 return -1;
             }
             itoa(d, tmp, 10, false);
-            if (!print(SystemTable, tmp, strlen(tmp)))
+            if (!print(tmp, strlen(tmp)))
                 return -1;
             written++;
         }
@@ -196,7 +197,7 @@ int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...)
                 return -1;
             }
             itoa(d, tmp, 10, true);
-            if (!print(SystemTable, tmp, strlen(tmp)))
+            if (!print(tmp, strlen(tmp)))
                 return -1;
             written++;
         }
@@ -210,7 +211,7 @@ int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...)
                 // TODO: Set errno to EOVERFLOW.
                 return -1;
             }
-            if (!print(SystemTable, str, len))
+            if (!print(str, len))
                 return -1;
             written += len;
         }
@@ -223,7 +224,7 @@ int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...)
                 // TODO: Set errno to EOVERFLOW.
                 return -1;
             }
-            if (!print(SystemTable, format, len))
+            if (!print(format, len))
                 return -1;
             written += len;
             format += len;

@@ -1,3 +1,5 @@
 #pragma once
 
-int printf(EFI_SYSTEM_TABLE *SystemTable, const char *restrict format, ...);
+extern EFI_SYSTEM_TABLE *SystemTable;
+
+int printf(const char *restrict format, ...);
