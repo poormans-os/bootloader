@@ -78,7 +78,7 @@ static bool print(const char *data, const size_t length)
     // if (EFI_SUCCESS == )
     //     return true;
     // return false;
-    CHAR16 out[50] = {0};
+    CHAR16 out[150] = {0};
     toLString(out, data, length);
     SystemTable->ConOut->OutputString(SystemTable->ConOut, out);
     return true;

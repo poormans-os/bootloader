@@ -5,7 +5,7 @@
 #include "stdio.h"
 #include "ourLoadFile.h"
 
-EFI_FILE_PROTOCOL *loadfile(CHAR16 *path, EFI_HANDLE ImageHandle)
+EFI_FILE_PROTOCOL EFIAPI *loadfile(IN CHAR16 *path, IN EFI_HANDLE ImageHandle)
 {
     EFI_GUID protocol1 = EFI_LOADED_IMAGE_PROTOCOL_GUID;
     EFI_GUID protocol2 = EFI_DEVICE_PATH_PROTOCOL_GUID;
@@ -33,7 +33,121 @@ EFI_FILE_PROTOCOL *loadfile(CHAR16 *path, EFI_HANDLE ImageHandle)
     return FileHandle;
 }
 
-PSF1_FONT *LoadPSF1Font(CHAR16 *Path, EFI_HANDLE ImageHandle)
+void *EFIAPI AllocatePool(size_t size)
+{
+    void *addr = NULL;
+    if (gBS->AllocatePool(EfiLoaderData, size, &addr) != EFI_SUCCESS)
+        addr = 0;
+    return addr;
+}
+
+EFI_STATUS EFIAPI FileRead(EFI_FILE_HANDLE file, void *dest, size_t size, size_t offset)
+{
+    EFI_STATUS status = file->SetPosition(file, offset);
+    if (status != EFI_SUCCESS)
+        return status;
+    return file->Read(file, &size, dest);
+}
+
+void EFIAPI ZeroMem(void *addr, size_t size)
+{
+    if (size <= 0)
+        return;
+    if (addr == NULL)
+        return;
+
+    memset(addr, 0, size);
+}
+
+EFI_STATUS LoadElf64(EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *fs, CHAR16 *file, ELF_INFO *info)
+{
+    EFI_STATUS status = EFI_SUCCESS;
+    EFI_FILE_PROTOCOL *root = NULL;
+    EFI_FILE_PROTOCOL *elfFile = NULL;
+
+    //CHECK(info != NULL);
+    info->PhysicalBase = MAX_INT64;
+
+    // open the executable file
+    fs->OpenVolume(fs, &root);                               //EFI_CHECK(fs->OpenVolume(fs, &root));
+    root->Open(root, &elfFile, file, EFI_FILE_MODE_READ, 0); //EFI_CHECK(root->Open(root, &elfFile, file, EFI_FILE_MODE_READ, 0));
+
+    // read the header
+    Elf64_Ehdr ehdr;
+    FileRead(elfFile, &ehdr, sizeof(Elf64_Ehdr), 0); //CHECK_AND_RETHROW(FileRead(elfFile, &ehdr, sizeof(Elf64_Ehdr), 0));
+
+    // verify is an elf
+    if (!IS_ELF(ehdr))
+        return -1; //CHECK(IS_ELF(ehdr));
+
+    // verify the elf type
+    // ehdr.e_ident[EI_VERSION] == EV_CURRENT; //CHECK(ehdr.e_ident[EI_VERSION] == EV_CURRENT);
+    // ehdr.e_ident[EI_CLASS] == ELFCLASS64;   //CHECK(ehdr.e_ident[EI_CLASS] == ELFCLASS64);
+    // ehdr.e_ident[EI_DATA] == ELFDATA2LSB;   //CHECK(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
+
+    // Load from section headers
+    Elf64_Phdr phdr;
+    for (int i = 0; i < ehdr.e_phnum; i++)
+    {
+        FileRead(elfFile, &phdr, sizeof(Elf64_Phdr), ehdr.e_phoff + ehdr.e_phentsize * i); //CHECK_AND_RETHROW(FileRead(elfFile, &phdr, sizeof(Elf64_Phdr), ehdr.e_phoff + ehdr.e_phentsize * i));
+
+        switch (phdr.p_type)
+        {
+        // normal section
+        case PT_LOAD:
+            // ignore empty sections
+            if (phdr.p_memsz == 0)
+                continue;
+
+            // get the type and pages to allocate
+            EFI_MEMORY_TYPE MemType = (phdr.p_flags & PF_X) ? EfiLoaderCode : EfiLoaderData;
+            UINTN nPages = EFI_SIZE_TO_PAGES(ALIGN_VALUE(phdr.p_memsz, EFI_PAGE_SIZE));
+
+            // allocate the address
+            EFI_PHYSICAL_ADDRESS base = info->VirtualOffset ? phdr.p_vaddr - info->VirtualOffset : phdr.p_paddr;
+            //TRACE("    BASE = %p, PAGES = %d", base, nPages);
+            status = EFI_ERROR(gBS->AllocatePages(AllocateAnyPages, MemType, nPages, &base)); //EFI_CHECK(gBS->AllocatePages(AllocateAddress, MemType, nPages, &base));
+            if (status != EFI_SUCCESS)
+                return status;
+
+            FileRead(elfFile, (void *)base, phdr.p_filesz, phdr.p_offset); //CHECK_AND_RETHROW(FileRead(elfFile, (void *)base, phdr.p_filesz, phdr.p_offset));
+            ZeroMem((void *)(base + phdr.p_filesz), phdr.p_memsz - phdr.p_filesz);
+
+            if (info->PhysicalBase > base)
+                info->PhysicalBase = base;
+
+        // ignore entry
+        default:
+            break;
+        }
+    }
+
+    // copy the section headers
+    info->SectionHeadersSize = ehdr.e_shnum * ehdr.e_shentsize;
+    info->SectionHeaders = AllocatePool(info->SectionHeadersSize); // TODO: Delete if error
+    info->SectionEntrySize = ehdr.e_shentsize;
+    info->StringSectionIndex = ehdr.e_shstrndx;
+    FileRead(elfFile, info->SectionHeaders, info->SectionHeadersSize, ehdr.e_shoff); //CHECK_AND_RETHROW(FileRead(elfFile, info->SectionHeaders, info->SectionHeadersSize, ehdr.e_shoff));
+
+    // copy the entry
+    info->Entry = ehdr.e_entry;
+    if (ehdr.e_entry > 0xffffffff80000000)
+        info->VirtualOffset = 0xffffffff80000000;
+
+    // if (root != NULL)
+    // {
+    //     FileHandleClose(root);
+    // }
+
+    // if (elfFile != NULL)
+    // {
+    //     FileHandleClose(elfFile);
+    // }
+
+    return status;
+}
+
+PSF1_FONT EFIAPI *LoadPSF1Font(IN CHAR16 *Path, IN EFI_HANDLE ImageHandle)
 {
     EFI_FILE_PROTOCOL *font = loadfile(Path, ImageHandle);
     if (font == NULL)
@@ -62,11 +176,13 @@ PSF1_FONT *LoadPSF1Font(CHAR16 *Path, EFI_HANDLE ImageHandle)
     return finishedFont;
 }
 
-EFI_STATUS EnterBestGraphicMode()
+EFI_STATUS EFIAPI EnterBestGraphicMode()
 {
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gop = NULL;
+    EFI_GUID gopGuid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *info = NULL;
     UINTN sizeOfInfo = sizeof(EFI_GRAPHICS_OUTPUT_MODE_INFORMATION);
+    gBS->LocateProtocol(&gopGuid, NULL, (VOID **)&gop);
 
     INTN i;
     INT32 bestOption;
@@ -88,7 +204,7 @@ EFI_STATUS EnterBestGraphicMode()
     return gop->SetMode(gop, bestOption);
 }
 
-EFI_STATUS initGOP(FRAMEBUFFER *FrameBuffer)
+EFI_STATUS EFIAPI initGOP(IN FRAMEBUFFER *FrameBuffer)
 {
     EFI_GUID gopGuid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
@@ -103,7 +219,7 @@ EFI_STATUS initGOP(FRAMEBUFFER *FrameBuffer)
     return status;
 }
 
-EFI_STATUS EFIAPI ElfLoadImage(const void *ElfImage, void **EntryPoint)
+EFI_STATUS EFIAPI ElfLoadImage(IN CONST void *ElfImage, OUT void **EntryPoint)
 {
     Elf64_Ehdr *ElfHdr;
     UINT8 *ProgramHdr;
@@ -137,7 +253,8 @@ EFI_STATUS EFIAPI ElfLoadImage(const void *ElfImage, void **EntryPoint)
 
             // Load the segment in memory
             FileSegment = (VOID *)((UINTN)ElfImage + ProgramHdrPtr->p_offset);
-            MemSegment = (VOID *)ProgramHdrPtr->p_vaddr;
+            //MemSegment = (VOID *)ProgramHdrPtr->p_vaddr;
+            MemSegment = AllocatePool(ProgramHdrPtr->p_filesz);
             gBS->CopyMem(MemSegment, FileSegment, ProgramHdrPtr->p_filesz);
 
             // Fill memory with zero for .bss section and ...
@@ -155,9 +272,9 @@ EFI_STATUS EFIAPI ElfLoadImage(const void *ElfImage, void **EntryPoint)
     return (EFI_SUCCESS);
 }
 
-EFI_STATUS loadKernel(CHAR16 *path, void **buffer, EFI_HANDLE ImageHandle)
+EFI_STATUS EFIAPI loadKernel(IN CHAR16 *path, IN EFI_HANDLE ImageHandle, OUT void **buffer)
 {
-    UINT64 fsize = 0x01000000;
+    UINT64 fsize = 0x00100000;
     EFI_FILE_PROTOCOL *file = loadfile(L"pmos.bin", ImageHandle);
 
     if (file == NULL)
