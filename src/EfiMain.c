@@ -1,9 +1,28 @@
 #include <Uefi.h>
 #include "stdio.h"
 #include "ourLoadFile.h"
+#include <MemoryAllocationLib.h>
+#include <MemLibInternals.h>
+#include <SetMemWrapper.c>
 
 EFI_SYSTEM_TABLE *SystemTable;
 EFI_BOOT_SERVICES *gBS;
+
+UINTN
+EFIAPI
+myAsmReadCr3 (
+    VOID
+  )
+{
+    unsigned long cr3;
+  __asm__ volatile(
+      "mov %%cr3, %%rax"
+      : "=m" (cr3)
+      : /* no input */
+      : "%rax"
+      );
+      return cr3;
+}
 
 EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 {
@@ -42,6 +61,12 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     gBS->HandleProtocol(LoadedImage->DeviceHandle, &protocol2, (void **)&Volume);
     ELF_INFO info = {0};
 
+    SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
+    if (LoadElf64(Volume, L"pmos.bin", &info) != EFI_SUCCESS)
+        printf("KERNEL ERROR\r\n");
+///////////////////////////
+    printf("Preparing higher half\r\n");
+
     __asm__ volatile("push %rax");
 
     __asm__ volatile("mov %cr0, %rax");
@@ -53,12 +78,27 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     __asm__ volatile("or $0x10, %rax");
     __asm__ volatile("mov %rax, %cr4");
 
-    __asm__ volatile("pop %rax");
+    __asm__ volatile("pop %rax");    
 
-    SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
-    if (LoadElf64(Volume, L"pmos.bin", &info) != EFI_SUCCESS)
-        printf("KERNEL ERROR\r\n");
+    // get the memory map
+    UINT64* Pml4 = (UINT64*)myAsmReadCr3();
 
+    // take the first pml4 and copy it to 0xffff800000000000
+    Pml4[256] = Pml4[0];
+
+    // allocate pml3 for 0xffffffff80000000
+    UINT64* Pml3High = AllocateReservedPages(1);
+    SetMem(Pml3High, EFI_PAGE_SIZE, 0);
+    printf("Allocated page %x\r\n", Pml3High);
+    Pml4[511] = ((UINT64)Pml3High) | 0x3u;
+
+    // map first 2 pages to 0xffffffff80000000
+    UINT64* Pml3Low = (UINT64*)(Pml4[0] & 0x7ffffffffffff000u);
+    Pml3High[510] = Pml3Low[0];
+    Pml3High[511] = Pml3Low[1];
+
+    printf("Getting memory map\r\n");
+////////////////////////////////////////////////
     entryPoint = (void *)info.Entry;
     printf("Entry: 0x%x\r\n", info.Entry);
     printf("PhysicalBase: 0x%x\r\n", info.PhysicalBase);

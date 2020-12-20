@@ -33,7 +33,7 @@ EFI_FILE_PROTOCOL EFIAPI *loadfile(IN CHAR16 *path, IN EFI_HANDLE ImageHandle)
     return FileHandle;
 }
 
-void *EFIAPI AllocatePool(size_t size)
+void *EFIAPI ourAllocatePool(size_t size)
 {
     void *addr = NULL;
     if (gBS->AllocatePool(EfiLoaderData, size, &addr) != EFI_SUCCESS)
@@ -124,7 +124,7 @@ EFI_STATUS LoadElf64(EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *fs, CHAR16 *file, ELF_INFO
 
     // copy the section headers
     info->SectionHeadersSize = ehdr.e_shnum * ehdr.e_shentsize;
-    info->SectionHeaders = AllocatePool(info->SectionHeadersSize); // TODO: Delete if error
+    info->SectionHeaders = ourAllocatePool(info->SectionHeadersSize); // TODO: Delete if error
     info->SectionEntrySize = ehdr.e_shentsize;
     info->StringSectionIndex = ehdr.e_shstrndx;
     FileRead(elfFile, info->SectionHeaders, info->SectionHeadersSize, ehdr.e_shoff); //CHECK_AND_RETHROW(FileRead(elfFile, info->SectionHeaders, info->SectionHeadersSize, ehdr.e_shoff));
@@ -254,7 +254,7 @@ EFI_STATUS EFIAPI ElfLoadImage(IN CONST void *ElfImage, OUT void **EntryPoint)
             // Load the segment in memory
             FileSegment = (VOID *)((UINTN)ElfImage + ProgramHdrPtr->p_offset);
             //MemSegment = (VOID *)ProgramHdrPtr->p_vaddr;
-            MemSegment = AllocatePool(ProgramHdrPtr->p_filesz);
+            MemSegment = ourAllocatePool(ProgramHdrPtr->p_filesz);
             gBS->CopyMem(MemSegment, FileSegment, ProgramHdrPtr->p_filesz);
 
             // Fill memory with zero for .bss section and ...
