@@ -56,4 +56,6 @@ EFI_STATUS EFIAPI EnterBestGraphicMode();
 EFI_STATUS EFIAPI initGOP(IN FRAMEBUFFER *FrameBuffer);
 EFI_STATUS EFIAPI ElfLoadImage(IN CONST void *ElfImage, OUT void **EntryPoint);
 EFI_STATUS EFIAPI loadKernel(IN CHAR16 *path, IN EFI_HANDLE ImageHandle, OUT void **buffer);
-EFI_STATUS LoadElf64(EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *fs, CHAR16 *file, ELF_INFO *info);
+EFI_STATUS EFIAPI LoadElf64(EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *fs, CHAR16 *file, ELF_INFO *info);
+void *EFIAPI outAllocateReservedPages(IN UINTN Pages);
+UINTN EFIAPI ourAsmReadCr3();

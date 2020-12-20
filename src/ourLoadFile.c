@@ -289,3 +289,32 @@ EFI_STATUS EFIAPI loadKernel(IN CHAR16 *path, IN EFI_HANDLE ImageHandle, OUT voi
 
     return EFI_SUCCESS;
 }
+
+void *EFIAPI outAllocateReservedPages(IN UINTN Pages)
+{
+    EFI_STATUS Status;
+    EFI_PHYSICAL_ADDRESS Memory;
+
+    if (Pages == 0)
+    {
+        return NULL;
+    }
+
+    Status = gBS->AllocatePages(AllocateAnyPages, EfiReservedMemoryType, Pages, &Memory);
+    if (EFI_ERROR(Status))
+    {
+        return NULL;
+    }
+    return (VOID *)(UINTN)Memory;
+}
+
+UINTN EFIAPI ourAsmReadCr3()
+{
+    unsigned long cr3;
+    __asm__ volatile(
+        "mov %%cr3, %%rax"
+        : "=m"(cr3)
+        : /* no input */
+        : "%rax");
+    return cr3;
+}
