@@ -290,7 +290,7 @@ EFI_STATUS EFIAPI loadKernel(IN CHAR16 *path, IN EFI_HANDLE ImageHandle, OUT voi
     return EFI_SUCCESS;
 }
 
-void *EFIAPI outAllocateReservedPages(IN UINTN Pages)
+void *EFIAPI ourAllocateReservedPages(IN UINTN Pages)
 {
     EFI_STATUS Status;
     EFI_PHYSICAL_ADDRESS Memory;
@@ -318,3 +318,45 @@ UINTN EFIAPI ourAsmReadCr3()
         : "%rax");
     return cr3;
 }
+
+VOID * EFIAPI ourAllocateReservedPool(IN UINTN  AllocationSize)
+{
+    EFI_STATUS status;
+    VOID  *Buffer = NULL;
+    
+    status = gBS->AllocatePool(EfiReservedMemoryType, AllocationSize, &Buffer);
+    if(status != EFI_SUCCESS)
+        printf("AllocateReservedPool ERROR: %d", status);
+    return Buffer;
+}
+
+// EFI_STATUS EFIAPI ourMemoryProfileLibRecord(IN PHYSICAL_ADDRESS CallerAddress, IN MEMORY_PROFILE_ACTION Action, IN EFI_MEMORY_TYPE MemoryType, IN VOID *Buffer, IN UINTN Size, IN CHAR8 *ActionString OPTIONAL)
+// {
+//     EDKII_MEMORY_PROFILE_PROTOCOL *mLibProfileProtocol;
+
+//     if(EFI_SUCCESS != gBS->LocateProtocol(&gEdkiiMemoryProfileGuid, NULL, (VOID **) &mLibProfileProtocol))
+//         mLibProfileProtocol = NULL;
+
+//     if (mLibProfileProtocol == NULL)
+//         return EFI_UNSUPPORTED;
+  
+//   return mLibProfileProtocol->Record(mLibProfileProtocol, CallerAddress, Action, MemoryType, Buffer, Size, ActionString);
+// }
+
+// VOID * EFIAPI ourAllocatePool (IN UINTN  AllocationSize)
+// {
+//     VOID  *Buffer;
+//     EFI_STATUS  Status;
+//     VOID        *Memory;
+
+//     Status = gBS->AllocatePool (EfiBootServicesData, AllocationSize, &Memory);
+//     if (EFI_ERROR (Status)) 
+//         Memory = NULL;
+
+//     Buffer = Memory;
+
+//     if (Buffer != NULL) 
+//         ourMemoryProfileLibRecord((PHYSICAL_ADDRESS) (UINTN) RETURN_ADDRESS(0), MEMORY_PROFILE_ACTION_LIB_ALLOCATE_POOL, EfiBootServicesData, Buffer, AllocationSize, NULL);
+
+//   return Buffer;
+// }

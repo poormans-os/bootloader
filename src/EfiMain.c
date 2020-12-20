@@ -1,11 +1,27 @@
 #include <Uefi.h>
 #include "stdio.h"
 #include "ourLoadFile.h"
-// #include <MemoryAllocationLib.h>
-// #include <BaseMemoryLib.h>
+
 
 EFI_SYSTEM_TABLE *SystemTable;
 EFI_BOOT_SERVICES *gBS;
+
+static UINT32 EfiTypeToStivaleType[] = {
+        [EfiReservedMemoryType] = RESERVED,
+        [EfiRuntimeServicesCode] = RESERVED,
+        [EfiRuntimeServicesData] = RESERVED,
+        [EfiMemoryMappedIO] = RESERVED,
+        [EfiMemoryMappedIOPortSpace] = RESERVED,
+        [EfiPalCode] = RESERVED,
+        [EfiUnusableMemory] = BAD_MEMORY,
+        [EfiACPIReclaimMemory] = ACPI_RECLAIM,
+        [EfiLoaderCode] = KERNEL_MODULES,
+        [EfiLoaderData] = KERNEL_MODULES,
+        [EfiBootServicesCode] = BOOTLODAER_RECLAIM,
+        [EfiBootServicesData] = BOOTLODAER_RECLAIM,
+        [EfiConventionalMemory] = USABLE,
+        [EfiACPIMemoryNVS] = ACPI_NVS
+};
 
 EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 {
@@ -47,7 +63,7 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
     if (LoadElf64(Volume, L"pmos.bin", &info) != EFI_SUCCESS)
         printf("KERNEL ERROR\r\n");
-    ///////////////////////////
+
     printf("Preparing higher half\r\n");
 
     __asm__ volatile("push %rax");
@@ -70,7 +86,7 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     Pml4[256] = Pml4[0];
 
     // allocate pml3 for 0xffffffff80000000
-    UINT64 *Pml3High = outAllocateReservedPages(1); //AllocateReservedPages(1);
+    UINT64 *Pml3High = ourAllocateReservedPages(1); //AllocateReservedPages(1);
     memset(Pml3High, 0, EFI_PAGE_SIZE);
     printf("Allocated page %x\r\n", Pml3High);
     Pml4[511] = ((UINT64)Pml3High) | 0x3u;
@@ -80,8 +96,69 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     Pml3High[510] = Pml3Low[0];
     Pml3High[511] = Pml3Low[1];
 
-    ////////////////////////////////////////////////
     printf("Getting memory map\r\n");
+    UINT8 TmpMemoryMap[1];
+    UINTN MemoryMapSize = sizeof(TmpMemoryMap);
+    UINTN MapKey = 0;
+    UINTN DescriptorSize = 0;
+    UINT32 DescriptorVersion = 0;
+    INFO_STRUCT* Struct = ourAllocateReservedPool(sizeof(INFO_STRUCT));
+    memset(Struct, 0, sizeof(INFO_STRUCT));
+
+    if(gBS->GetMemoryMap(&MemoryMapSize, (EFI_MEMORY_DESCRIPTOR *) TmpMemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion) == EFI_BUFFER_TOO_SMALL)
+    {
+        printf("size of the buffer needed to contain the map: %d\r\n", MemoryMapSize);
+    }
+
+    // allocate space for the efi mmap and take into
+    // account that there will be changes
+    MemoryMapSize += EFI_PAGE_SIZE;
+    EFI_MEMORY_DESCRIPTOR* MemoryMap = ourAllocatePool(MemoryMapSize);
+
+    // allocate all the space we will need (hopefully)
+    MMAP_ENTRY* StartFrom = ourAllocateReservedPool((MemoryMapSize / DescriptorSize) * sizeof(MMAP_ENTRY));
+    printf("1\r\n");
+
+    // call it
+    if(EFI_SUCCESS != (Status = gBS->GetMemoryMap(&MemoryMapSize, MemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion)))
+    {
+        printf("line 124 ERROR: %d\r\n", Status);
+    }
+    UINTN EntryCount = (MemoryMapSize / DescriptorSize);
+    printf("2\r\n");
+
+    // Exit the memory services
+    if(EFI_SUCCESS != (Status = gBS->ExitBootServices(ImageHandle, MapKey)))
+    {
+        printf("MapKey is incorrect: %d\r\n", MapKey);
+    }
+
+    // setup the normal memory map
+    Struct->MemoryMapAddr = (UINT64)StartFrom;
+    Struct->MemoryMapEntries = 0;
+    int LastType = -1;
+    UINTN LastEnd = 0xFFFFFFFFFFFF;
+
+    for (int i = 0; i < EntryCount; i++) {
+        EFI_MEMORY_DESCRIPTOR* Desc = (EFI_MEMORY_DESCRIPTOR*)((UINTN)MemoryMap + DescriptorSize * i);
+        int Type = EfiTypeToStivaleType[Desc->Type];
+
+        if (LastType == Type && LastEnd == Desc->PhysicalStart) {
+            StartFrom[-1].Length += EFI_PAGES_TO_SIZE(Desc->NumberOfPages);
+            LastEnd = Desc->PhysicalStart + EFI_PAGES_TO_SIZE(Desc->NumberOfPages);
+        } else {
+            StartFrom->Type = Type;
+            StartFrom->Length = EFI_PAGES_TO_SIZE(Desc->NumberOfPages);
+            StartFrom->Base = Desc->PhysicalStart;
+            StartFrom->Unused = 0;
+            LastType = Type;
+            LastEnd = Desc->PhysicalStart + EFI_PAGES_TO_SIZE(Desc->NumberOfPages);
+            StartFrom++;
+            Struct->MemoryMapEntries++;
+        }
+    }
+
+
     printf("Entry: 0x%x\r\n", info.Entry);
     printf("PhysicalBase: 0x%x\r\n", info.PhysicalBase);
     printf("SectionEntrySize: 0x%x\r\n", info.SectionEntrySize);

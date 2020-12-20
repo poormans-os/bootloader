@@ -16,8 +16,7 @@ INCLUDE_DIRS += edk2/MdePkg/Include/Protocol
 INCLUDE_DIRS += edk2/basetools/source/c/genfw
 
 INCLUDE_DIRS += edk2/MdePkg/Include/Library
-INCLUDE_DIRS += edk2/MdePkg/Library/BaseMemoryLib
-INCLUDE_DIRS += edk2/MdePkg/Library/UefiMemoryAllocationLib
+INCLUDE_DIRS += edk2/MdeModulePkg/Include/Guid
 
 
 
