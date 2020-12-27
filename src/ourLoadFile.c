@@ -308,24 +308,59 @@ void *EFIAPI ourAllocateReservedPages(IN UINTN Pages)
     return (VOID *)(UINTN)Memory;
 }
 
-UINTN EFIAPI ourAsmReadCr3()
+// UINTN EFIAPI ourAsmReadCr3()
+// {
+//     unsigned long cr3;
+//     __asm__ volatile(
+//         "mov %%cr3, %%rax"
+//         : "=m"(cr3)
+//         : /* no input */
+//         : "%rax");
+//     return cr3;
+// }
+unsigned long long ourAsmReadCr3(void)
 {
-    unsigned long cr3;
-    __asm__ volatile(
-        "mov %%cr3, %%rax"
-        : "=m"(cr3)
-        : /* no input */
-        : "%rax");
-    return cr3;
+    unsigned long long __cr3_val;
+    __asm__ __volatile__("movq %%cr3, %0"
+                         : "=q"(__cr3_val)
+                         :
+                         : "memory");
+    return __cr3_val;
 }
 
-VOID * EFIAPI ourAllocateReservedPool(IN UINTN  AllocationSize)
+unsigned long long ourAsmReadCr0(void)
+{
+    unsigned long long __cr0_val;
+    __asm__ __volatile__("movq %%cr0, %0"
+                         : "=q"(__cr0_val)
+                         :
+                         : "memory");
+    return __cr0_val;
+}
+
+void ourAsmWriteCr0(unsigned long long value)
+{
+    __asm__("movq %0, %%cr0"
+            :
+            : "q"(value)
+            : "memory");
+}
+
+void ourAsmWriteCr4(unsigned long long value)
+{
+    __asm__("movq %0, %%cr4"
+            :
+            : "q"(value)
+            : "memory");
+}
+
+VOID *EFIAPI ourAllocateReservedPool(IN UINTN AllocationSize)
 {
     EFI_STATUS status;
-    VOID  *Buffer = NULL;
-    
+    VOID *Buffer = NULL;
+
     status = gBS->AllocatePool(EfiReservedMemoryType, AllocationSize, &Buffer);
-    if(status != EFI_SUCCESS)
+    if (status != EFI_SUCCESS)
         printf("AllocateReservedPool ERROR: %d", status);
     return Buffer;
 }
@@ -339,7 +374,7 @@ VOID * EFIAPI ourAllocateReservedPool(IN UINTN  AllocationSize)
 
 //     if (mLibProfileProtocol == NULL)
 //         return EFI_UNSUPPORTED;
-  
+
 //   return mLibProfileProtocol->Record(mLibProfileProtocol, CallerAddress, Action, MemoryType, Buffer, Size, ActionString);
 // }
 
@@ -350,12 +385,12 @@ VOID * EFIAPI ourAllocateReservedPool(IN UINTN  AllocationSize)
 //     VOID        *Memory;
 
 //     Status = gBS->AllocatePool (EfiBootServicesData, AllocationSize, &Memory);
-//     if (EFI_ERROR (Status)) 
+//     if (EFI_ERROR (Status))
 //         Memory = NULL;
 
 //     Buffer = Memory;
 
-//     if (Buffer != NULL) 
+//     if (Buffer != NULL)
 //         ourMemoryProfileLibRecord((PHYSICAL_ADDRESS) (UINTN) RETURN_ADDRESS(0), MEMORY_PROFILE_ACTION_LIB_ALLOCATE_POOL, EfiBootServicesData, Buffer, AllocationSize, NULL);
 
 //   return Buffer;

@@ -47,14 +47,16 @@ typedef struct _ELF_INFO
     UINTN StringSectionIndex;
 } ELF_INFO;
 
-typedef struct {
+typedef struct
+{
     UINT64 Base;
     UINT64 Length;
     UINT32 Type;
     UINT32 Unused;
 } MMAP_ENTRY;
 
-typedef struct {
+typedef struct
+{
     UINT64 Cmdline;
     UINT64 MemoryMapAddr;
     UINT64 MemoryMapEntries;
@@ -68,16 +70,16 @@ typedef struct {
     UINT64 Modules;
     UINT64 Epoch;
     UINT64 Flags;
-#define STIVALE_STRUCT_BIOS         BIT0
+#define STIVALE_STRUCT_BIOS BIT0
 } INFO_STRUCT;
 
-#define USABLE              1
-#define RESERVED            2
-#define ACPI_RECLAIM        3
-#define ACPI_NVS            4
-#define BAD_MEMORY          5
-#define KERNEL_MODULES      10
-#define BOOTLODAER_RECLAIM  0x1000
+#define USABLE 1
+#define RESERVED 2
+#define ACPI_RECLAIM 3
+#define ACPI_NVS 4
+#define BAD_MEMORY 5
+#define KERNEL_MODULES 10
+#define BOOTLODAER_RECLAIM 0x1000
 
 extern EFI_SYSTEM_TABLE *SystemTable;
 extern EFI_BOOT_SERVICES *gBS;
@@ -91,5 +93,8 @@ EFI_STATUS EFIAPI ElfLoadImage(IN CONST void *ElfImage, OUT void **EntryPoint);
 EFI_STATUS EFIAPI loadKernel(IN CHAR16 *path, IN EFI_HANDLE ImageHandle, OUT void **buffer);
 EFI_STATUS EFIAPI LoadElf64(EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *fs, CHAR16 *file, ELF_INFO *info);
 void *EFIAPI ourAllocateReservedPages(IN UINTN Pages);
-UINTN EFIAPI ourAsmReadCr3();
-VOID * EFIAPI ourAllocateReservedPool(IN UINTN  AllocationSize);
+// UINTN EFIAPI ourAsmReadCr3();
+unsigned long long ourAsmReadCr3(void);
+unsigned long long ourAsmReadCr0(void);
+void ourAsmWriteCr0(unsigned long long value);
+VOID *EFIAPI ourAllocateReservedPool(IN UINTN AllocationSize);

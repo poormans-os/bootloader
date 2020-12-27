@@ -1,29 +1,29 @@
 #include <Uefi.h>
 #include "stdio.h"
 #include "ourLoadFile.h"
-
+#include <intrin.h>
 
 EFI_SYSTEM_TABLE *SystemTable;
 EFI_BOOT_SERVICES *gBS;
 
 static UINT32 EfiTypeToStivaleType[] = {
-        [EfiReservedMemoryType] = RESERVED,
-        [EfiRuntimeServicesCode] = RESERVED,
-        [EfiRuntimeServicesData] = RESERVED,
-        [EfiMemoryMappedIO] = RESERVED,
-        [EfiMemoryMappedIOPortSpace] = RESERVED,
-        [EfiPalCode] = RESERVED,
-        [EfiUnusableMemory] = BAD_MEMORY,
-        [EfiACPIReclaimMemory] = ACPI_RECLAIM,
-        [EfiLoaderCode] = KERNEL_MODULES,
-        [EfiLoaderData] = KERNEL_MODULES,
-        [EfiBootServicesCode] = BOOTLODAER_RECLAIM,
-        [EfiBootServicesData] = BOOTLODAER_RECLAIM,
-        [EfiConventionalMemory] = USABLE,
-        [EfiACPIMemoryNVS] = ACPI_NVS
-};
+    [EfiReservedMemoryType] = RESERVED,
+    [EfiRuntimeServicesCode] = RESERVED,
+    [EfiRuntimeServicesData] = RESERVED,
+    [EfiMemoryMappedIO] = RESERVED,
+    [EfiMemoryMappedIOPortSpace] = RESERVED,
+    [EfiPalCode] = RESERVED,
+    [EfiUnusableMemory] = BAD_MEMORY,
+    [EfiACPIReclaimMemory] = ACPI_RECLAIM,
+    [EfiLoaderCode] = KERNEL_MODULES,
+    [EfiLoaderData] = KERNEL_MODULES,
+    [EfiBootServicesCode] = BOOTLODAER_RECLAIM,
+    [EfiBootServicesData] = BOOTLODAER_RECLAIM,
+    [EfiConventionalMemory] = USABLE,
+    [EfiACPIMemoryNVS] = ACPI_NVS};
 
-EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
+EFI_STATUS
+EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 {
     SystemTable = ST;
     gBS = SystemTable->BootServices;
@@ -35,9 +35,9 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     EFI_STATUS Status;
     EFI_INPUT_KEY Key;
 
-    UINTN mapSize = 0, mapKey, descriptorSize;
-    EFI_MEMORY_DESCRIPTOR *memoryMap = NULL;
-    UINT32 descriptorVersion = 1;
+    // UINTN mapSize = 0, mapKey, descriptorSize;
+    // EFI_MEMORY_DESCRIPTOR *memoryMap = NULL;
+    // UINT32 descriptorVersion = 1;
 
     FRAMEBUFFER *FrameBuffer = NULL;
     // void *kernelBuffer = NULL;
@@ -60,27 +60,34 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     gBS->HandleProtocol(LoadedImage->DeviceHandle, &protocol2, (void **)&Volume);
     ELF_INFO info = {0};
 
-    SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
+    // SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
     if (LoadElf64(Volume, L"pmos.bin", &info) != EFI_SUCCESS)
         printf("KERNEL ERROR\r\n");
 
     printf("Preparing higher half\r\n");
 
-    __asm__ volatile("push %rax");
+    // __asm__ volatile("push %rax");
 
-    __asm__ volatile("mov %cr0, %rax");
-    __asm__ volatile("or $0x1, %rax");
-    __asm__ volatile("or $0x40000000, %rax");
-    __asm__ volatile("mov %rax, %cr0");
+    // __asm__ volatile("mov %cr0, %rax");
+    // __asm__ volatile("or $0x1, %rax");
+    // __asm__ volatile("orq $0x80000000, %rax");
+    // __asm__ volatile("mov %rax, %cr0");
 
-    __asm__ volatile("mov %cr4, %rax");
-    __asm__ volatile("or $0x10, %rax");
-    __asm__ volatile("mov %rax, %cr4");
+    // __asm__ volatile("mov %cr4, %rax");
+    // __asm__ volatile("or $0x10, %rax");
+    // __asm__ volatile("mov %rax, %cr4");
 
-    __asm__ volatile("pop %rax");
+    // __asm__ volatile("pop %rax");
+
+    // __asm__ volatile("cli");
+    unsigned long long tempCr0 = ourAsmReadCr0();
+    tempCr0 = tempCr0 & ~(1ULL << 16);
+    ourAsmWriteCr0(tempCr0);
 
     // get the memory map
+    // UINT64 *Pml4 = (UINT64 *)__readcr3();
     UINT64 *Pml4 = (UINT64 *)ourAsmReadCr3();
+    printf("0x%x\r\n", Pml4);
 
     // take the first pml4 and copy it to 0xffff800000000000
     Pml4[256] = Pml4[0];
@@ -102,10 +109,10 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     UINTN MapKey = 0;
     UINTN DescriptorSize = 0;
     UINT32 DescriptorVersion = 0;
-    INFO_STRUCT* Struct = ourAllocateReservedPool(sizeof(INFO_STRUCT));
+    INFO_STRUCT *Struct = ourAllocateReservedPool(sizeof(INFO_STRUCT));
     memset(Struct, 0, sizeof(INFO_STRUCT));
 
-    if(gBS->GetMemoryMap(&MemoryMapSize, (EFI_MEMORY_DESCRIPTOR *) TmpMemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion) == EFI_BUFFER_TOO_SMALL)
+    if (gBS->GetMemoryMap(&MemoryMapSize, (EFI_MEMORY_DESCRIPTOR *)TmpMemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion) == EFI_BUFFER_TOO_SMALL)
     {
         printf("size of the buffer needed to contain the map: %d\r\n", MemoryMapSize);
     }
@@ -113,25 +120,19 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     // allocate space for the efi mmap and take into
     // account that there will be changes
     MemoryMapSize += EFI_PAGE_SIZE;
-    EFI_MEMORY_DESCRIPTOR* MemoryMap = ourAllocatePool(MemoryMapSize);
+    EFI_MEMORY_DESCRIPTOR *MemoryMap = ourAllocatePool(MemoryMapSize);
 
     // allocate all the space we will need (hopefully)
-    MMAP_ENTRY* StartFrom = ourAllocateReservedPool((MemoryMapSize / DescriptorSize) * sizeof(MMAP_ENTRY));
-    printf("1\r\n");
+    MMAP_ENTRY *StartFrom = ourAllocateReservedPool((MemoryMapSize / DescriptorSize) * sizeof(MMAP_ENTRY));
+    // printf("1\r\n");
 
     // call it
-    if(EFI_SUCCESS != (Status = gBS->GetMemoryMap(&MemoryMapSize, MemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion)))
+    if (EFI_SUCCESS != (Status = gBS->GetMemoryMap(&MemoryMapSize, MemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion)))
     {
         printf("line 124 ERROR: %d\r\n", Status);
     }
     UINTN EntryCount = (MemoryMapSize / DescriptorSize);
-    printf("2\r\n");
-
-    // Exit the memory services
-    if(EFI_SUCCESS != (Status = gBS->ExitBootServices(ImageHandle, MapKey)))
-    {
-        printf("MapKey is incorrect: %d\r\n", MapKey);
-    }
+    // printf("2\r\n");
 
     // setup the normal memory map
     Struct->MemoryMapAddr = (UINT64)StartFrom;
@@ -139,14 +140,18 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     int LastType = -1;
     UINTN LastEnd = 0xFFFFFFFFFFFF;
 
-    for (int i = 0; i < EntryCount; i++) {
-        EFI_MEMORY_DESCRIPTOR* Desc = (EFI_MEMORY_DESCRIPTOR*)((UINTN)MemoryMap + DescriptorSize * i);
+    for (int i = 0; i < EntryCount; i++)
+    {
+        EFI_MEMORY_DESCRIPTOR *Desc = (EFI_MEMORY_DESCRIPTOR *)((UINTN)MemoryMap + DescriptorSize * i);
         int Type = EfiTypeToStivaleType[Desc->Type];
 
-        if (LastType == Type && LastEnd == Desc->PhysicalStart) {
+        if (LastType == Type && LastEnd == Desc->PhysicalStart)
+        {
             StartFrom[-1].Length += EFI_PAGES_TO_SIZE(Desc->NumberOfPages);
             LastEnd = Desc->PhysicalStart + EFI_PAGES_TO_SIZE(Desc->NumberOfPages);
-        } else {
+        }
+        else
+        {
             StartFrom->Type = Type;
             StartFrom->Length = EFI_PAGES_TO_SIZE(Desc->NumberOfPages);
             StartFrom->Base = Desc->PhysicalStart;
@@ -157,7 +162,6 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
             Struct->MemoryMapEntries++;
         }
     }
-
 
     printf("Entry: 0x%x\r\n", info.Entry);
     printf("PhysicalBase: 0x%x\r\n", info.PhysicalBase);
@@ -174,27 +178,28 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     if (font == NULL)
         printf("PSF1 ERROR\r\n");
 
-    while (EFI_SUCCESS != (Status = gBS->GetMemoryMap(&mapSize, memoryMap, &mapKey, &descriptorSize, &descriptorVersion)))
-    {
-        if (Status == EFI_BUFFER_TOO_SMALL)
-        {
-            printf("Setting up memory map buffer.\r\n");
-            mapSize += 2 * descriptorSize;
-            gBS->AllocatePool(EfiLoaderData, mapSize, (void **)&memoryMap);
-        }
-        else
-            printf("Error getting memory map: %d.\r\n", Status);
-    }
-    if (EFI_ERROR(Status))
-    {
-        printf("Get Map Error!\r\n");
-        return Status;
-    }
-    else
-    {
-        printf("Memory map size: %d.\r\n", mapSize);
-        printf("Memory descriptor size: %d.\r\n", descriptorSize);
-    }
+    // while (EFI_SUCCESS != (Status = gBS->GetMemoryMap(&mapSize, memoryMap, &mapKey, &descriptorSize, &descriptorVersion)))
+    // {
+    //     if (Status == EFI_BUFFER_TOO_SMALL)
+    //     {
+    //         printf("Setting up memory map buffer.\r\n");
+    //         mapSize += 2 * descriptorSize;
+    //         gBS->AllocatePool(EfiLoaderData, mapSize, (void **)&memoryMap);
+    //     }
+    //     else
+    //         printf("Error getting memory map: %d.\r\n", Status);
+    // }
+    // if (EFI_ERROR(Status))
+    // {
+    //     printf("Get Map Error!\r\n");
+    //     return Status;
+    // }
+    // else
+    // {
+    //     printf("Memory map size: %d.\r\n", mapSize);
+    //     printf("Memory descriptor size: %d.\r\n", descriptorSize);
+    // }
+
     //unsigned char *addr = (unsigned char *)FrameBuffer->BaseAddress;
     //unsigned char bg_color = 0xff;
 
@@ -220,11 +225,20 @@ EFI_STATUS EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     // while ((Status = SystemTable->ConIn->ReadKeyStroke(SystemTable->ConIn, &Key)) == EFI_NOT_READY)
     //     ;
 
-    void (*entryPointFun)(FRAMEBUFFER *) = entryPoint;
+    void (*entryPointFun)(FRAMEBUFFER *) = (void *)info.PhysicalBase + info.VirtualOffset; //entryPoint;
     printf("RUNNING\r\n");
-    printf("ENTRY AT %x\r\n", entryPoint);
+    printf("ENTRY AT 0x%x\r\n", entryPoint);
+    printf("jumping to: 0x%x\r\n", entryPointFun);
+
+    // Exit the memory services
+    if (EFI_SUCCESS != (Status = gBS->ExitBootServices(ImageHandle, MapKey)))
+    {
+        printf("MapKey is incorrect: 0x%x, %d\r\n", MapKey, Status);
+    }
+
+    __asm__ volatile("int $0x3");
     entryPointFun(FrameBuffer);
-    gBS->ExitBootServices(ImageHandle, mapKey);
+    // // gBS->ExitBootServices(ImageHandle, mapKey);
     printf("STILL RUNNING\r\n");
 
     while ((Status = SystemTable->ConIn->ReadKeyStroke(SystemTable->ConIn, &Key)) == EFI_NOT_READY)
