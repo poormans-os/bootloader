@@ -225,10 +225,15 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     // while ((Status = SystemTable->ConIn->ReadKeyStroke(SystemTable->ConIn, &Key)) == EFI_NOT_READY)
     //     ;
 
-    void (*entryPointFun)(FRAMEBUFFER *) = (void *)info.PhysicalBase + info.VirtualOffset; //entryPoint;
+    void (*entryPointFun)(FRAMEBUFFER *) = entryPoint; //(void *)info.PhysicalBase + info.VirtualOffset;
     printf("RUNNING\r\n");
     printf("ENTRY AT 0x%x\r\n", entryPoint);
     printf("jumping to: 0x%x\r\n", entryPointFun);
+
+    if (gBS->GetMemoryMap(&MemoryMapSize, (EFI_MEMORY_DESCRIPTOR *)TmpMemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion) == EFI_BUFFER_TOO_SMALL)
+    {
+        printf("size of the buffer needed to contain the map: %d\r\n", MemoryMapSize);
+    }
 
     // Exit the memory services
     if (EFI_SUCCESS != (Status = gBS->ExitBootServices(ImageHandle, MapKey)))
@@ -236,7 +241,6 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         printf("MapKey is incorrect: 0x%x, %d\r\n", MapKey, Status);
     }
 
-    __asm__ volatile("int $0x3");
     entryPointFun(FrameBuffer);
     // // gBS->ExitBootServices(ImageHandle, mapKey);
     printf("STILL RUNNING\r\n");
