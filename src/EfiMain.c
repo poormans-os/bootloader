@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include "ourLoadFile.h"
 #include <intrin.h>
+#include <idt.h>
 
 EFI_SYSTEM_TABLE *SystemTable;
 EFI_BOOT_SERVICES *gBS;
@@ -49,6 +50,12 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 
     if (initGOP(FrameBuffer) != EFI_SUCCESS)
         printf("GOP ERROR\r\n");
+
+    idt_init();
+    while (1)
+    {
+        /* code */
+    }
 
     // if (loadKernel(L"pmos.bin", ImageHandle, &kernelBuffer) != EFI_SUCCESS)
     //     printf("KERNEL ERROR\r\n");

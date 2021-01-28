@@ -14,18 +14,28 @@ typedef struct
 
 IDT_entry IDT[256]; //All the interputs are stored in is table
 
-extern struct _keyboardState keyboardState; //The keyboard state, defined at "irq.c"
+extern _keyboardState keyboardState; //The keyboard state, defined at "irq.c"
+
+extern void irq0(void *);
+extern void irq1(void *);
+
+inline void load_idt(unsigned long long *addr)
+{
+    __asm {
+        lidt [addr]
+        sti
+    }
+}
 
 //initializing the IDT
 void idt_init(void)
 {
-    extern int load_idt();
-
-    unsigned long irq0_address;
-    unsigned long irq1_address;
+    // extern int load_idt(void *);
+    unsigned long long irq0_address;
+    unsigned long long irq1_address;
 
     unsigned long idt_address;
-    unsigned long idt_ptr[2];
+    unsigned long long idt_ptr[2];
 
     /* remapping the PIC */
     outb(0x20, 0x11);
@@ -39,19 +49,38 @@ void idt_init(void)
     outb(0x21, 0x0);
     outb(0xA1, 0x0);
 
-    irq0_address = (unsigned long)irq0;
-    IDT[32].offset_lowerbits = irq0_address & 0xffff;
-    IDT[32].selector = 0x08; /* KERNEL_CODE_SEGMENT_OFFSET */
-    IDT[32].zero = 0;
-    IDT[32].type_attr = 0x8e; /* INTERRUPT_GATE */
-    IDT[32].offset_higherbits = (irq0_address & 0xffff0000) >> 16;
+    int offset = 64;
 
-    irq1_address = (unsigned long)irq1;
-    IDT[33].offset_lowerbits = irq1_address & 0xffff;
-    IDT[33].selector = 0x08; /* KERNEL_CODE_SEGMENT_OFFSET */
-    IDT[33].zero = 0;
-    IDT[33].type_attr = 0x8e; /* INTERRUPT_GATE */
-    IDT[33].offset_higherbits = (irq1_address & 0xffff0000) >> 16;
+    irq0_address = (unsigned long long)irq0;
+    IDT[offset].offset_lowerbits = irq0_address & 0xFFFF;
+    IDT[offset].offset_middlebits = (irq0_address >> 16) & 0xFFFF;
+    IDT[offset].offset_higherbits = (irq0_address >> 32) & 0xFFFFFFFF;
+    IDT[offset].selector = 0x08;
+    IDT[offset].type_attr = 0x8e;
+    IDT[offset].ist = 0;
+    IDT[offset].zero = 0;
+
+    irq1_address = (unsigned long long)irq1;
+    IDT[offset + 1].offset_lowerbits = irq1_address & 0xFFFF;
+    IDT[offset + 1].offset_middlebits = (irq1_address >> 16) & 0xFFFF;
+    IDT[offset + 1].offset_higherbits = (irq1_address >> 32) & 0xFFFFFFFF;
+    IDT[offset + 1].selector = 0x08;
+    IDT[offset + 1].type_attr = 0x8e;
+    IDT[offset + 1].ist = 0;
+    IDT[offset + 1].zero = 0;
+
+    // IDT[0].offset_lowerbits = irq0_address & 0xffff;
+    // IDT[0].selector = 0x08; /* KERNEL_CODE_SEGMENT_OFFSET */
+    // IDT[0].zero = 0;
+    // IDT[0].type_attr = 0x8e; /* INTERRUPT_GATE */
+    // IDT[0].offset_higherbits = (irq0_address & 0xffff0000) >> 16;
+
+    // irq1_address = (unsigned long)irq1;
+    // IDT[33].offset_lowerbits = irq1_address & 0xffff;
+    // IDT[33].selector = 0x08; /* KERNEL_CODE_SEGMENT_OFFSET */
+    // IDT[33].zero = 0;
+    // IDT[33].type_attr = 0x8e; /* INTERRUPT_GATE */
+    // IDT[33].offset_higherbits = (irq1_address & 0xffff0000) >> 16;
 
     /* fill the IDT descriptor */
     idt_address = (unsigned long)IDT;
