@@ -41,7 +41,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 
     FRAMEBUFFER *FrameBuffer = NULL;
     // void *kernelBuffer = NULL;
-    void *entryPoint = NULL;
+    // void *entryPoint = NULL;
     PSF1_FONT *font = LoadPSF1Font(L"zap-light16.psf", ImageHandle);
 
     if (EnterBestGraphicMode() != EFI_SUCCESS)
@@ -126,12 +126,6 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     MMAP_ENTRY *StartFrom = ourAllocateReservedPool((MemoryMapSize / DescriptorSize) * sizeof(MMAP_ENTRY));
     // printf("1\r\n");
 
-    // call it
-    if (EFI_SUCCESS != (Status = gBS->GetMemoryMap(&MemoryMapSize, MemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion)))
-    {
-        printf("line 124 ERROR: %d\r\n", Status);
-    }
-
     printf("Entry: 0x%x\r\n", info.Entry);
     printf("PhysicalBase: 0x%x\r\n", info.PhysicalBase);
     printf("SectionEntrySize: 0x%x\r\n", info.SectionEntrySize);
@@ -140,12 +134,17 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     printf("StringSectionIndex: 0x%x\r\n", info.StringSectionIndex);
     printf("VirtualOffset: 0x%x\r\n", info.VirtualOffset);
 
+    void (*entryPointFun)(FRAMEBUFFER *) = (void *)info.Entry + 0xffffffff80000000; //(void *)info.PhysicalBase + info.VirtualOffset;
+    printf("jumping to: 0x%x\r\n", entryPointFun);
+
     if (font == NULL)
         printf("PSF1 ERROR\r\n");
 
-    void (*entryPointFun)(FRAMEBUFFER *) = entryPoint; //(void *)info.PhysicalBase + info.VirtualOffset;
-    printf("ENTRY AT 0x%x\r\n", entryPoint);
-    printf("jumping to: 0x%x\r\n", entryPointFun);
+    // call it
+    if (EFI_SUCCESS != (Status = gBS->GetMemoryMap(&MemoryMapSize, MemoryMap, &MapKey, &DescriptorSize, &DescriptorVersion)))
+    {
+        printf("line 124 ERROR: %d\r\n", Status);
+    }
 
     // Exit the memory services
     if (EFI_SUCCESS != (Status = gBS->ExitBootServices(ImageHandle, MapKey)))
@@ -183,7 +182,6 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         }
     }
 
-    entryPoint = (void *)info.Entry;
     entryPointFun(FrameBuffer);
     // if (ElfLoadImage(kernelBuffer, &entryPoint) != EFI_SUCCESS)
     //     printf("ENTRY POINT ERROR\r\n");

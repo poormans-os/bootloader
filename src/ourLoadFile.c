@@ -36,7 +36,7 @@ EFI_FILE_PROTOCOL EFIAPI *loadfile(IN CHAR16 *path, IN EFI_HANDLE ImageHandle)
 void *EFIAPI ourAllocatePool(size_t size)
 {
     void *addr = NULL;
-    if (gBS->AllocatePool(EfiLoaderData, size, &addr) != EFI_SUCCESS)
+    if (gBS->AllocatePool(EfiReservedMemoryType, size, &addr) != EFI_SUCCESS)
         addr = 0;
     return addr;
 }
@@ -100,7 +100,7 @@ EFI_STATUS LoadElf64(EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *fs, CHAR16 *file, ELF_INFO
                 continue;
 
             // get the type and pages to allocate
-            EFI_MEMORY_TYPE MemType = (phdr.p_flags & PF_X) ? EfiLoaderCode : EfiLoaderData;
+            EFI_MEMORY_TYPE MemType = EfiReservedMemoryType;
             UINTN nPages = EFI_SIZE_TO_PAGES(ALIGN_VALUE(phdr.p_memsz, EFI_PAGE_SIZE));
 
             // allocate the address
@@ -154,7 +154,7 @@ PSF1_FONT EFIAPI *LoadPSF1Font(IN CHAR16 *Path, IN EFI_HANDLE ImageHandle)
         return NULL;
 
     PSF1_HEADER *fontHeader;
-    gBS->AllocatePool(EfiLoaderData, sizeof(PSF1_HEADER), (void **)&fontHeader);
+    gBS->AllocatePool(EfiReservedMemoryType, sizeof(PSF1_HEADER), (void **)&fontHeader);
     UINTN size = sizeof(PSF1_HEADER);
     font->Read(font, &size, fontHeader);
     if (fontHeader->magic[0] != PSF1_MAGIC0 || fontHeader->magic[1] != PSF1_MAGIC1)
@@ -166,11 +166,11 @@ PSF1_FONT EFIAPI *LoadPSF1Font(IN CHAR16 *Path, IN EFI_HANDLE ImageHandle)
 
     void *glyphBuffer;
     font->SetPosition(font, sizeof(PSF1_HEADER));
-    gBS->AllocatePool(EfiLoaderData, glyphBufferSize, (void **)&glyphBuffer);
+    gBS->AllocatePool(EfiReservedMemoryType, glyphBufferSize, (void **)&glyphBuffer);
     font->Read(font, &glyphBufferSize, glyphBuffer);
 
     PSF1_FONT *finishedFont;
-    gBS->AllocatePool(EfiLoaderData, sizeof(PSF1_FONT), (void **)&finishedFont);
+    gBS->AllocatePool(EfiReservedMemoryType, sizeof(PSF1_FONT), (void **)&finishedFont);
     finishedFont->psf1_header = fontHeader;
     finishedFont->glyphBuffer = glyphBuffer;
     return finishedFont;
