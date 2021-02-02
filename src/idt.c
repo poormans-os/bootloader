@@ -19,11 +19,12 @@ extern _keyboardState keyboardState; //The keyboard state, defined at "irq.c"
 extern void irq0(void *);
 extern void irq1(void *);
 
-inline void load_idt(unsigned long long *addr)
+inline void load_idt(unsigned long long addr)
 {
-    __asm {
+    __asm
+    {
         lidt [addr]
-        sti
+            sti
     }
 }
 
@@ -34,8 +35,7 @@ void idt_init(void)
     unsigned long long irq0_address;
     unsigned long long irq1_address;
 
-    unsigned long idt_address;
-    unsigned long long idt_ptr[2];
+    unsigned long long idt_address;
 
     /* remapping the PIC */
     outb(0x20, 0x11);
@@ -83,11 +83,9 @@ void idt_init(void)
     // IDT[33].offset_higherbits = (irq1_address & 0xffff0000) >> 16;
 
     /* fill the IDT descriptor */
-    idt_address = (unsigned long)IDT;
-    idt_ptr[0] = (sizeof(IDT_entry) * 256) + ((idt_address & 0xffff) << 16);
-    idt_ptr[1] = idt_address >> 16;
+    idt_address = (unsigned long long)IDT;
 
-    load_idt(idt_ptr);
+    load_idt(idt_address);
 
     // Keyboard init
     keyboardState.scanSet = 1;
