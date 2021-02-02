@@ -20,6 +20,7 @@ INCLUDE_DIRS += edk2/MdePkg/Include/X64
 INCLUDE_DIRS += edk2/MdePkg/Include/Protocol
 INCLUDE_DIRS += edk2/basetools/source/c/genfw
 
+INCLUDE_DIRS += edk2/MdePkg/Include/Pi
 INCLUDE_DIRS += edk2/MdePkg/Include/Library
 INCLUDE_DIRS += edk2/MdeModulePkg/Include/Guid
 
