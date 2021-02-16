@@ -3,6 +3,9 @@
 #include <PiMultiPhase.h>
 #include <MpService.h>
 
+typedef int pid_t;
+typedef long long register_t;
+
 EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
 
 UINTN globalTest = 0;
@@ -26,6 +29,27 @@ EFI_BOOT_SERVICES *gBS;
 //     [EfiConventionalMemory] = USABLE,
 //     [EfiACPIMemoryNVS] = ACPI_NVS};
 
+struct registers
+{
+    register_t rax;
+    register_t rbx;
+    register_t rcx;
+    register_t rdx;
+    register_t eflags;
+    register_t cs;
+    register_t ds;
+    register_t ss;
+    register_t eip;
+};
+struct pInfo
+{
+    pid_t pid;
+    struct registers regs;
+    void *memLower;
+    void *memUpper;
+    struct pInfo *next;
+};
+
 void testPrint()
 {
     globalTest = 1;
@@ -40,8 +64,8 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 
     EFI_MP_SERVICES_PROTOCOL *MpProto = NULL;
     UINTN NumEnabled = 0;
-    UINTN ProcNum = 0;
-    UINTN NumProc = 0;
+    UINTN ProcNum = 1;
+    size_t NumProc = 0;
     EFI_PROCESSOR_INFORMATION Tcb = {0};
 
     SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
