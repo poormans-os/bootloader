@@ -19,6 +19,7 @@ INCLUDE_DIRS += edk2/basetools/source/c/genfw
 
 INCLUDE_DIRS += edk2/MdePkg/Include/Pi
 INCLUDE_DIRS += edk2/MdePkg/Include/Library
+INCLUDE_DIRS += edk2/MdePkg/Include/Library/baselib
 INCLUDE_DIRS += edk2/MdeModulePkg/Include/Guid
 
 ASFLAGS = -fwin64
@@ -46,6 +47,7 @@ LDFLAGS := \
 
 clean:
 	@rm -rf build
+	@rm -rf obj
 
 all: $(TARGET)
 
@@ -60,7 +62,8 @@ build/%.c.o: %.c
 	@echo "\033[35m[Compiling]\033[0m $@"
 	@$(CLANG) $(CFLAGS) -c -o $@ $<
 
-build/%.asm.o: %.asm
+run: $(TARGET)
 	@mkdir -p $(@D)
-	@echo "\033[36m[Assembling]\033[0m $@"
-	@$(AS) $(ASFLAGS) -o $@ $<
+	@echo "\033[36m[Runing on qemu]\033[0m"
+	@qemu-system-x86_64 -s -L externals -bios externals/OVMF.fd -hdd fat:rw:bin --enable-kvm -cpu host -smp 4,sockets=1,cores=2,threads=2 -m 4096 --monitor stdio
+

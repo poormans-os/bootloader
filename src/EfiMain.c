@@ -1,12 +1,6 @@
 #include <Uefi.h>
 #include "stdio.h"
-#include <PiMultiPhase.h>
-#include <MpService.h>
-
-#define malloc(x, y) gBS->AllocatePool(EfiReservedMemoryType, x, y);
-#define free(x) gBS->FreePool(x);
-
-EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
+#include "scheduler.h"
 
 EFI_SYSTEM_TABLE *SystemTable;
 EFI_BOOT_SERVICES *gBS;
@@ -19,6 +13,7 @@ void testPrint(char *s)
 EFI_STATUS
 EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 {
+    EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
     SystemTable = ST;
     gBS = SystemTable->BootServices;
 
@@ -68,34 +63,41 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     }
     printf("proccesor id: %d\r\nproccesor flags: %d\r\n", Tcb.ProcessorId, Tcb.StatusFlag);
 
-    void *Event = NULL;
-    void *Procedure = testPrint;
-    void *ProcedureArgument = "1";
-    // Create an Event, required to call StartupThisAP in non-blocking mode
-    Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &Event);
-    if (Status == EFI_SUCCESS)
-    {
-        printf("Successful Event creation.\r\n");
-        // Start a Task on the specified Processor.
-        Status = MpProto->StartupThisAP(MpProto, Procedure, 1, Event, 0, ProcedureArgument, NULL);
-        if (Status == EFI_SUCCESS)
-        {
-            printf("Task successfully started.\r\n");
-        }
-        else
-        {
-            printf("Failed to start Task on CPU %d\r\n", ProcNum);
-            printf("\r\nStatus %d\r\n", Status);
-        }
-    }
-    else
-    {
-        printf("Event creation failed: %d\r\n", Status);
-    }
+    // void *Event = NULL;
+    // //void *Procedure = testPrint;
+    // //void *ProcedureArgument = "1";
+    // // Create an Event, required to call StartupThisAP in non-blocking mode
+    // Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &Event);
+    // if (Status == EFI_SUCCESS)
+    // {
+    //     printf("Successful Event creation.\r\n");
+    //     // Start a Task on the specified Processor.
+    //     //Status = MpProto->StartupThisAP(MpProto, Procedure, 1, Event, 0, ProcedureArgument, NULL);
+    //     Status = EFI_SUCCESS;
+    //     if (Status == EFI_SUCCESS)
+    //     {
+    //         printf("Task successfully started.\r\n");
+    //     }
+    //     else
+    //     {
+    //         printf("Failed to start Task on CPU %d\r\n", ProcNum);
+    //         printf("\r\nStatus %d\r\n", Status);
+    //     }
+    // }
+    // else
+    // {
+    //     printf("Event creation failed: %d\r\n", Status);
+    // }
+    printf("Init\r\n");
 
     // EFI_STATUS Status;
     EFI_INPUT_KEY Key;
     UINTN KeyEvent = 0;
+
+    if (initScheduler() != EFI_SUCCESS)
+        printf("Error\r\n");
+    addProcToQueue(testPrint, "1");
+    //addProcToQueue(testPrint, "2");
 
     while (1)
     {
