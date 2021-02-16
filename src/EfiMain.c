@@ -3,33 +3,17 @@
 #include <PiMultiPhase.h>
 #include <MpService.h>
 
-EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
+#define malloc(x, y) gBS->AllocatePool(EfiReservedMemoryType, x, y);
+#define free(x) gBS->FreePool(x);
 
-UINTN globalTest = 0;
+EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
 
 EFI_SYSTEM_TABLE *SystemTable;
 EFI_BOOT_SERVICES *gBS;
 
-// static UINT32 EfiTypeToStivaleType[] = {
-//     [EfiReservedMemoryType] = RESERVED,
-//     [EfiRuntimeServicesCode] = RESERVED,
-//     [EfiRuntimeServicesData] = RESERVED,
-//     [EfiMemoryMappedIO] = RESERVED,
-//     [EfiMemoryMappedIOPortSpace] = RESERVED,
-//     [EfiPalCode] = RESERVED,
-//     [EfiUnusableMemory] = BAD_MEMORY,
-//     [EfiACPIReclaimMemory] = ACPI_RECLAIM,
-//     [EfiLoaderCode] = KERNEL_MODULES,
-//     [EfiLoaderData] = KERNEL_MODULES,
-//     [EfiBootServicesCode] = BOOTLODAER_RECLAIM,
-//     [EfiBootServicesData] = BOOTLODAER_RECLAIM,
-//     [EfiConventionalMemory] = USABLE,
-//     [EfiACPIMemoryNVS] = ACPI_NVS};
-
-void testPrint()
+void testPrint(char *s)
 {
-    globalTest = 1;
-    printf("Hello Threading\r\n");
+    printf("Hello Threading %s\r\n", s);
 }
 
 EFI_STATUS
@@ -60,22 +44,37 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         printf("Unable to get the number of processors: %d\r\n", Status);
     }
     // Get Processor Health and Location information
-    Status = MpProto->GetProcessorInfo(MpProto, ProcNum, &Tcb);
-    if (Status != EFI_SUCCESS)
+
+    for (size_t i = 0; i < ProcNum; i++)
     {
-        printf("Unable to get information for proc. %d: %d\r\n", ProcNum, Status);
+        if (i != 0)
+        {
+            Status = MpProto->EnableDisableAP(MpProto, i, TRUE, NULL);
+            if (Status != EFI_SUCCESS)
+            {
+                printf("Unable to get information for proc. %d: %d\r\n", i, Status);
+                continue;
+            }
+        }
+        Status = MpProto->GetProcessorInfo(MpProto, i, &Tcb);
+        if (Status != EFI_SUCCESS)
+        {
+            printf("Unable to get information for proc. %d: %d\r\n", i, Status);
+            continue;
+        }
+        printf("%d: ProcID %d, Flags: 0x%x\r\n", i, Tcb.ExtendedInformation, Tcb.StatusFlag);
     }
 
     void *Event = NULL;
     void *Procedure = testPrint;
-    void *ProcedureArgument = NULL;
+    void *ProcedureArgument = "1";
     // Create an Event, required to call StartupThisAP in non-blocking mode
     Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &Event);
     if (Status == EFI_SUCCESS)
     {
         printf("Successful Event creation.\r\n");
         // Start a Task on the specified Processor.
-        Status = MpProto->StartupThisAP(MpProto, Procedure, ProcNum, Event, 0, ProcedureArgument, NULL);
+        Status = MpProto->StartupThisAP(MpProto, Procedure, 1, Event, 0, ProcedureArgument, NULL);
         if (Status == EFI_SUCCESS)
         {
             printf("Task successfully started.\r\n");
@@ -102,7 +101,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         SystemTable->BootServices->WaitForEvent(1, &SystemTable->ConIn->WaitForKey, &KeyEvent);
         SystemTable->ConIn->ReadKeyStroke(SystemTable->ConIn, &Key);
         SystemTable->ConIn->Reset(SystemTable->ConIn, FALSE);
-        printf("The value is %d, %c", globalTest, Key.UnicodeChar);
+        printf("The value is %c", Key.UnicodeChar);
     }
 
     SystemTable->RuntimeServices->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
