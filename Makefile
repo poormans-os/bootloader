@@ -5,14 +5,11 @@ FUSE_LD := lld-link
 .PHONY: all clean run
 default: all
 
-TARGET := ../bin/efi/boot/BOOTX64.EFI
+TARGET := bin/efi/boot/BOOTX64.EFI
 
 SRCS += $(shell find src/ -name '*.c')
-# ASM_SRCS += $(shell find src/ -name '*.asm')
 
 OBJS := $(SRCS:%=build/%.o)
-ASM_OBJS :=
-# ASM_OBJS := $(ASM_SRCS:%=build/%.o)
 
 INCLUDE_DIRS += include
 INCLUDE_DIRS += edk2/MdePkg/Include
