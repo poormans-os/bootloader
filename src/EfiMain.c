@@ -25,6 +25,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     EFI_MP_SERVICES_PROTOCOL *MpProto = NULL;
     UINTN NumEnabled = 0;
     UINTN ProcNum = 0;
+    UINTN NumProc = 0;
     EFI_PROCESSOR_INFORMATION Tcb = {0};
 
     SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
@@ -38,11 +39,12 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         printf("Unable to locate the MpService procotol: %d\r\n", Status);
     }
     // Get Number of Processors and Number of Enabled Processors
-    Status = MpProto->GetNumberOfProcessors(MpProto, &ProcNum, &NumEnabled);
+    Status = MpProto->GetNumberOfProcessors(MpProto, &NumProc, &NumEnabled);
     if (Status != EFI_SUCCESS)
     {
         printf("Unable to get the number of processors: %d\r\n", Status);
     }
+    printf("number of proccesors: %d\r\n", NumProc);
     // Get Processor Health and Location information
 
     for (size_t i = 0; i < ProcNum; i++)
@@ -64,6 +66,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         }
         printf("%d: ProcID %d, Flags: 0x%x\r\n", i, Tcb.ExtendedInformation, Tcb.StatusFlag);
     }
+    printf("proccesor id: %d\r\nproccesor flags: %d\r\n", Tcb.ProcessorId, Tcb.StatusFlag);
 
     void *Event = NULL;
     void *Procedure = testPrint;
@@ -82,15 +85,13 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         else
         {
             printf("Failed to start Task on CPU %d\r\n", ProcNum);
-            printf("Status %d\r\n", Status);
+            printf("\r\nStatus %d\r\n", Status);
         }
     }
     else
     {
         printf("Event creation failed: %d\r\n", Status);
     }
-
-    printf("ProcNum: %d\r\n", ProcNum);
 
     // EFI_STATUS Status;
     EFI_INPUT_KEY Key;
