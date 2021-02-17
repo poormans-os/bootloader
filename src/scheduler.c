@@ -4,13 +4,14 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
 {
     EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
 
-    if (current_proc->next != NULL)
-        current_proc = current_proc->next;
-    else
-    {
-        current_proc = pqueue;
-        pqueue = pqueue->next;
-    }
+    // if (current_proc->next != NULL)
+    //     current_proc = current_proc->next;
+    // else
+    // {
+    //     current_proc = pqueue;
+    //     pqueue = pqueue->next;
+    // }
+    current_proc = pqueue;
 
     if (!current_proc)
     {
@@ -34,6 +35,9 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
         {
             printf("Task successfully started.\r\n");
             //remove task from queue
+            proc_t *tmp = pqueue;
+            pqueue = pqueue->next;
+            free(tmp);
         }
         else
         {

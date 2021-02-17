@@ -98,6 +98,9 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         printf("Error\r\n");
     addProcToQueue(testPrint, "1");
     addProcToQueue(testPrint, "2");
+    addProcToQueue(testPrint, "3");
+    addProcToQueue(testPrint, "4");
+    addProcToQueue(testPrint, "5");
 
     while (1)
     {
