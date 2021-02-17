@@ -61,7 +61,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         }
         printf("%d: ProcID %d, Flags: 0x%x\r\n", i, Tcb.ExtendedInformation, Tcb.StatusFlag);
     }
-    printf("proccesor id: %d\r\nproccesor flags: %d\r\n", Tcb.ProcessorId, Tcb.StatusFlag);
+    // printf("proccesor id: %d\r\nproccesor flags: %d\r\n", Tcb.ProcessorId, Tcb.StatusFlag);
 
     // void *Event = NULL;
     // //void *Procedure = testPrint;
@@ -97,7 +97,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     if (initScheduler() != EFI_SUCCESS)
         printf("Error\r\n");
     addProcToQueue(testPrint, "1");
-    //addProcToQueue(testPrint, "2");
+    addProcToQueue(testPrint, "2");
 
     while (1)
     {

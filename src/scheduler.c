@@ -7,7 +7,10 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     if (current_proc->next != NULL)
         current_proc = current_proc->next;
     else
+    {
         current_proc = pqueue;
+        pqueue = pqueue->next;
+    }
 
     if (!current_proc)
     {
@@ -30,6 +33,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
         if (Status == EFI_SUCCESS)
         {
             printf("Task successfully started.\r\n");
+            //remove task from queue
         }
         else
         {
@@ -54,13 +58,15 @@ EFI_STATUS addProcToQueue(void *func, void *args)
     memset(&(proc->regs), 0, sizeof(registers_t));
     proc->regs.eip = (INT64)func;
     proc->pid = ++pidCount;
+    proc->args = args;
+    proc->next = NULL;
 
     proc_t *last = pqueue;
     if (!last)
     {
         pqueue = proc;
         return status;
-    };
+    }
     while (last->next != NULL)
         last = last->next;
     last->next = proc;
