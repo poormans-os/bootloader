@@ -21,33 +21,52 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     void *Event = NULL;
     EFI_MP_SERVICES_PROTOCOL *MpProto = NULL;
     EFI_STATUS Status = gBS->LocateProtocol(&gEfiMpServiceProtocolGuid, NULL, (void **)&MpProto);
-    //void *Procedure = testPrint;
-    //void *ProcedureArgument = "1";
-    // Create an Event, required to call StartupThisAP in non-blocking mode
-    Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &Event);
-    if (Status == EFI_SUCCESS)
+    int coreNum = -1;
+    for (int i = 0; i < procInfo.numCores; i++)
     {
-        printf("Successful Event creation.\r\n");
-        // Start a Task on the specified Processor.
-        Status = MpProto->StartupThisAP(MpProto, (void *)current_proc->regs.eip, coreCount++, Event, 0, current_proc->args, NULL);
-        Status = EFI_SUCCESS;
+        if (procInfo.cores[i] == 0) //core is not used
+        {
+            procInfo.cores[i] = 1;
+            coreNum = i;
+            break;
+        }
+    }
+    if (coreNum != -1)
+    {
+        // Create an Event, required to call StartupThisAP in non-blocking mode
+        Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &Event);
         if (Status == EFI_SUCCESS)
         {
-            printf("Task successfully started.\r\n");
-            //remove task from queue
-            proc_t *tmp = pqueue;
-            pqueue = pqueue->next;
-            free(tmp);
+            // Start a Task on the specified Processor.
+            Status = MpProto->StartupThisAP(MpProto, (void *)current_proc->regs.eip, coreNum, Event, 0, current_proc->args, NULL);
+            Status = EFI_SUCCESS;
+            if (Status == EFI_SUCCESS)
+            {
+                //remove task from queue
+                proc_t *tmp = pqueue;
+                pqueue = pqueue->next;
+                free(tmp);
+                Status = gBS->CloseEvent(Event);
+                if (Status == EFI_SUCCESS)
+                {
+                    procInfo.cores[coreNum] = 0;
+                    printf("Event close Successfully. %d\r\n", coreNum);
+                }
+            }
+            else
+            {
+                printf("Failed to start Task on CPU %d\r\n", coreNum);
+                printf("\r\nStatus %d\r\n", Status);
+            }
         }
         else
         {
-            printf("Failed to start Task on CPU %d\r\n", (coreCount - 1));
-            printf("\r\nStatus %d\r\n", Status);
+            printf("Event creation failed: %d\r\n", Status);
         }
     }
     else
     {
-        printf("Event creation failed: %d\r\n", Status);
+        printf("No core available.\r\n");
     }
 }
 
@@ -78,7 +97,7 @@ EFI_STATUS addProcToQueue(void *func, void *args)
     return status;
 }
 
-EFI_STATUS initScheduler()
+EFI_STATUS initScheduler(UINTN CoreCount)
 {
     EFI_STATUS Status;
     Status = gBS->CreateEvent(
@@ -99,5 +118,20 @@ EFI_STATUS initScheduler()
     if (EFI_ERROR(Status))
         return Status;
 
+    Status = kmalloc(sizeof(proc_info_t), (void **)&procInfo);
+    if (Status != EFI_SUCCESS)
+        return Status;
+
+    procInfo.numCores = CoreCount - 1;
+
+    Status = kmalloc(sizeof(int) * procInfo.numCores, (void **)&(procInfo.cores));
+    if (Status != EFI_SUCCESS)
+        return Status;
+    printf("2\r\n");
+
+    for (int i = 0; i < procInfo.numCores; i++)
+    {
+        procInfo.cores[i] = 0;
+    }
     return EFI_SUCCESS;
 }

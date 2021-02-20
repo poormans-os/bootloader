@@ -4,8 +4,8 @@
 #include <MpService.h>
 #include "stdio.h"
 
-#define kmalloc(x, y) gBS->AllocatePool(EfiReservedMemoryType, x, y); //IN* , OUT**
-#define free(x) gBS->FreePool(x);
+#define kmalloc(x, y) gBS->AllocatePool(EfiReservedMemoryType, x, y) //IN* , OUT**
+#define free(x) gBS->FreePool(x)
 #define TIMER_PERIOD_MILLISECONDS(Milliseconds) (UINT64)(Milliseconds) * 10000
 
 extern EFI_SYSTEM_TABLE *SystemTable;
@@ -37,8 +37,14 @@ typedef struct proc_t
     struct proc_t *next;
 } proc_t;
 
+typedef struct proc_info_t
+{
+    UINTN numCores;
+    UINTN *cores;
+} proc_info_t;
+
 static UINT32 pidCount = 0;
-static UINT32 coreCount = 1;
+static proc_info_t procInfo;
 proc_t *pqueue;
 proc_t *current_proc;
 
@@ -56,4 +62,4 @@ EXAMPLE_DEVICE *Device;
 
 void TimerHandler(IN EFI_EVENT Event, IN VOID *Context);
 EFI_STATUS addProcToQueue(void *func, void *args);
-EFI_STATUS initScheduler();
+EFI_STATUS initScheduler(UINTN CoreCount);

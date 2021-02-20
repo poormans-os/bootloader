@@ -94,7 +94,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     EFI_INPUT_KEY Key;
     UINTN KeyEvent = 0;
 
-    if (initScheduler() != EFI_SUCCESS)
+    if (initScheduler(ProcNum) != EFI_SUCCESS)
         printf("Error\r\n");
     addProcToQueue(testPrint, "1");
     addProcToQueue(testPrint, "2");
