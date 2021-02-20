@@ -41,9 +41,10 @@ typedef struct proc_info_t
 {
     UINTN numCores;
     UINTN *cores;
+    UINTN *finished;
 } proc_info_t;
 
-static UINT32 pidCount = 0;
+static UINT32 pidCount = 1;
 static proc_info_t procInfo;
 proc_t *pqueue;
 proc_t *current_proc;

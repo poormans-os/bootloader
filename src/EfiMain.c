@@ -7,6 +7,7 @@ EFI_BOOT_SERVICES *gBS;
 
 void testPrint(char *s)
 {
+    gBS->Stall(1000 * 1000);
     printf("Hello Threading %s\r\n", s);
 }
 
@@ -19,7 +20,6 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 
     EFI_MP_SERVICES_PROTOCOL *MpProto = NULL;
     UINTN NumEnabled = 0;
-    UINTN ProcNum = 0;
     UINTN NumProc = 0;
     EFI_PROCESSOR_INFORMATION Tcb = {0};
 
@@ -42,7 +42,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     printf("number of proccesors: %d\r\n", NumProc);
     // Get Processor Health and Location information
 
-    for (size_t i = 0; i < ProcNum; i++)
+    for (size_t i = 0; i < NumProc; i++)
     {
         if (i != 0)
         {
@@ -59,7 +59,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
             printf("Unable to get information for proc. %d: %d\r\n", i, Status);
             continue;
         }
-        printf("%d: ProcID %d, Flags: 0x%x\r\n", i, Tcb.ExtendedInformation, Tcb.StatusFlag);
+        //printf("%d: ProcID %d, Flags: 0x%x\r\n", i, Tcb.ExtendedInformation, Tcb.StatusFlag);
     }
     // printf("proccesor id: %d\r\nproccesor flags: %d\r\n", Tcb.ProcessorId, Tcb.StatusFlag);
 
@@ -94,7 +94,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     EFI_INPUT_KEY Key;
     UINTN KeyEvent = 0;
 
-    if (initScheduler(ProcNum) != EFI_SUCCESS)
+    if (initScheduler(NumProc) != EFI_SUCCESS)
         printf("Error\r\n");
     addProcToQueue(testPrint, "1");
     addProcToQueue(testPrint, "2");
