@@ -96,11 +96,13 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 
     if (initScheduler(NumProc) != EFI_SUCCESS)
         printf("Error\r\n");
+    printf("Main Control!\r\n");
     addProcToQueue(testPrint, "1");
     addProcToQueue(testPrint, "2");
     addProcToQueue(testPrint, "3");
     addProcToQueue(testPrint, "4");
     addProcToQueue(testPrint, "5");
+    printf("Main Control!\r\n");
 
     while (1)
     {

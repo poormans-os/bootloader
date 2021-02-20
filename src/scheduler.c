@@ -12,52 +12,73 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     //     pqueue = pqueue->next;
     // }
     current_proc = pqueue;
-
     if (!current_proc)
-    {
         return;
-    }
 
-    void *Event = NULL;
     EFI_MP_SERVICES_PROTOCOL *MpProto = NULL;
     EFI_STATUS Status = gBS->LocateProtocol(&gEfiMpServiceProtocolGuid, NULL, (void **)&MpProto);
+
+    //////// Critical Code Section Begin ////////
+    //Clean Proccesses
+    for (size_t i = 0; i < procInfo.numCores; i++)
+    {
+        if (procInfo.procs[i].status == TRUE)
+        {
+            procInfo.procs[i].status = FALSE;
+            //Free The struct
+            procInfo.procs[i].currentProc = 0;
+            gBS->CloseEvent(procInfo.procs[i].callingEvent);
+            printf("Event close Successfully. %d\r\n", i);
+        }
+    }
+
+    //Select A proc
     int coreNum = 0;
     for (coreNum = 0; coreNum < procInfo.numCores; coreNum++)
     {
-        if (procInfo.cores[coreNum] == 0) //core is not used
+        if (procInfo.procs[coreNum].currentProc == 0)
         {
-            procInfo.cores[coreNum] = 1;
+            procInfo.procs[coreNum].currentProc = current_proc;
             break;
         }
     }
 
+    //////// Critical Code Section End ////////
+
+    // int coreNum = 0;
+    // for (coreNum = 0; coreNum < procInfo.numCores; coreNum++)
+    // {
+    //     if (procInfo.cores[coreNum] == 0) //core is not used
+    //     {
+    //         procInfo.cores[coreNum] = 1;
+    //         break;
+    //     }
+    // }
+
     //No core was found
     if (coreNum == procInfo.numCores)
         return;
-    printf("Core Found %d\r\n", coreNum);
+
+    printf("Core Found %d, %d, %d\r\n", coreNum, procInfo.procs[coreNum].currentProc, current_proc);
 
     // Create an Event, required to call StartupThisAP in non-blocking mode
-    Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &Event);
+    Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &procInfo.procs[coreNum].callingEvent);
     if (Status == EFI_SUCCESS)
     {
         // Start a Task on the specified Processor.
-        Status = MpProto->StartupThisAP(MpProto, (void *)current_proc->regs.eip, coreNum + 1, Event, 0, current_proc->args, (void *)&procInfo.finished[coreNum]);
-        while (!procInfo.finished[coreNum])
-        {
-        }
+        Status = MpProto->StartupThisAP(MpProto, (void *)current_proc->regs.eip, coreNum + 1, procInfo.procs[coreNum].callingEvent, 0, current_proc->args, (void *)&procInfo.procs[coreNum].status);
 
         if (Status == EFI_SUCCESS)
         {
             //remove task from queue
-            proc_t *tmp = pqueue;
-            pqueue = pqueue->next;
-            free(tmp);
-            Status = gBS->CloseEvent(Event);
-            if (Status == EFI_SUCCESS)
-            {
-                procInfo.cores[coreNum] = 0;
-                printf("Event close Successfully. %d\r\n", coreNum);
-            }
+            // proc_t *tmp = pqueue;
+            // pqueue = pqueue->next;
+            // free(tmp);
+            //Status = gBS->CloseEvent(Event);
+            // if (Status == EFI_SUCCESS)
+            // {
+            //     procInfo.cores[coreNum] = 0;
+            // }
         }
         else
         {
@@ -125,18 +146,29 @@ EFI_STATUS initScheduler(UINTN CoreCount)
 
     procInfo.numCores = CoreCount - 1;
 
-    Status = kmalloc(sizeof(int) * procInfo.numCores, (void **)&(procInfo.cores));
+    Status = kmalloc(sizeof(proc_info_t) * procInfo.numCores, (void **)&(procInfo.procs));
     if (Status != EFI_SUCCESS)
         return Status;
 
-    Status = kmalloc(sizeof(int) * procInfo.numCores, (void **)&(procInfo.finished));
-    if (Status != EFI_SUCCESS)
-        return Status;
-
-    for (int i = 0; i < procInfo.numCores; i++)
+    for (size_t i = 0; i < procInfo.numCores; i++)
     {
-        procInfo.cores[i] = 0;
-        procInfo.finished[i] = 0;
+        procInfo.procs[i].currentProc = 0; //(void *)-1;
+        procInfo.procs[i].status = FALSE;
     }
+
+    // Status = kmalloc(sizeof(int) * procInfo.numCores, (void **)&(procInfo.cores));
+    // if (Status != EFI_SUCCESS)
+    //     return Status;
+
+    // Status = kmalloc(sizeof(int) * procInfo.numCores, (void **)&(procInfo.finished));
+    // if (Status != EFI_SUCCESS)
+    //     return Status;
+
+    // for (int i = 0; i < procInfo.numCores; i++)
+    // {
+    //     procInfo.cores[i] = 0;
+    //     procInfo.finished[i] = 0;
+    // }
+
     return EFI_SUCCESS;
 }

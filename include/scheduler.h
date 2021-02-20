@@ -37,15 +37,21 @@ typedef struct proc_t
     struct proc_t *next;
 } proc_t;
 
-typedef struct proc_info_t
+typedef struct
 {
-    UINTN numCores;
-    UINTN *cores;
-    UINTN *finished;
+    proc_t *currentProc;
+    EFI_EVENT callingEvent;
+    UINTN status;
 } proc_info_t;
 
+typedef struct
+{
+    UINTN numCores;
+    proc_info_t *procs;
+} procs_info_t;
+
 static UINT32 pidCount = 1;
-static proc_info_t procInfo;
+static procs_info_t procInfo;
 proc_t *pqueue;
 proc_t *current_proc;
 
