@@ -19,33 +19,61 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     EFI_STATUS Status = gBS->LocateProtocol(&gEfiMpServiceProtocolGuid, NULL, (void **)&MpProto);
 
     //////// Critical Code Section Begin ////////
+
+    acquireMutex(&mutexes[0]);
     //Clean Proccesses
     for (size_t i = 0; i < procInfo.numCores; i++)
     {
-        acquireMutex(&mutexes[i]);
+        proc_t *temp = NULL;
+        int found = 0;
         if (procInfo.procs[i].status == TRUE)
         {
-            procInfo.procs[i].status = FALSE;
-            //Free The struct
-            procInfo.procs[i].currentProc = 0;
-            gBS->CloseEvent(procInfo.procs[i].callingEvent);
-            printf("Event close Successfully. %d\r\n", i);
+            //Remove the proc with the same pid
+            if (current_proc == procInfo.procs[i].currentProc)
+            {
+                found = 1;
+                temp = current_proc;
+            }
+            else
+            {
+                while (current_proc->next || !found)
+                {
+                    if (current_proc == procInfo.procs[i].currentProc)
+                    {
+                        temp = current_proc->next;
+                        current_proc->next = temp->next;
+                        found = 1;
+                    }
+                    else
+                        current_proc = current_proc->next;
+                }
+            }
+            if (found)
+            {
+                procInfo.procs[i].status = FALSE;
+                procInfo.procs[i].currentProc = 0;
+                gBS->CloseEvent(procInfo.procs[i].callingEvent);
+                current_proc = current_proc->next;
+                printf("Event close Successfully. %d\r\n", i);
+                //Free The struct, Stored at procInfo.procs[i].currentProc
+            }
+            else
+                //The problem is with the fact that the proc with the pid should have just stopped running, And thats a problem
+                printf("PROBLEM\r\n");
         }
-        releaseMutex(&mutexes[i]);
     }
 
     //Select A proc
     int coreNum = 0;
     for (coreNum = 0; coreNum < procInfo.numCores; coreNum++)
     {
-        acquireMutex(&mutexes[coreNum]);
         if (procInfo.procs[coreNum].currentProc == 0)
         {
             procInfo.procs[coreNum].currentProc = current_proc;
             break;
         }
-        releaseMutex(&mutexes[coreNum]);
     }
+    releaseMutex(&mutexes[0]);
 
     //////// Critical Code Section End ////////
 
@@ -65,7 +93,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
         printf("No Core was found\r\n");
         return;
     }
-    printf("Core Found %d, %d, %d\r\n", coreNum, procInfo.procs[coreNum].currentProc, current_proc);
+    printf("Core Found %d, %d, %d\r\n", coreNum, procInfo.procs[coreNum].currentProc, current_proc->pid);
 
     // Create an Event, required to call StartupThisAP in non-blocking mode
     Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &procInfo.procs[coreNum].callingEvent);
@@ -76,6 +104,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
 
         if (Status == EFI_SUCCESS)
         {
+            printf("Event Created On Core %d\r\n", coreNum);
             //remove task from queue
             // proc_t *tmp = pqueue;
             // pqueue = pqueue->next;
@@ -101,14 +130,14 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
 void acquireMutex(mutex_t *mutex)
 {
     while (!__sync_bool_compare_and_swap(mutex, 0, 1))
-    {
         __asm__ volatile("pause");
-    }
+    printf("acquireMutex\r\n");
 }
 
 void releaseMutex(mutex_t *mutex)
 {
     *mutex = 0;
+    printf("releaseMutex\r\n");
 }
 
 EFI_STATUS addProcToQueue(void *func, void *args)
@@ -119,9 +148,10 @@ EFI_STATUS addProcToQueue(void *func, void *args)
         return status;
 
     //memcpy
+    pidCount++;
     memset(&(proc->regs), 0, sizeof(registers_t));
     proc->regs.eip = (INT64)func;
-    proc->pid = ++pidCount;
+    proc->pid = pidCount;
     proc->args = args;
     proc->next = NULL;
 
@@ -173,6 +203,7 @@ EFI_STATUS initScheduler(UINTN CoreCount)
     {
         procInfo.procs[i].currentProc = 0; //(void *)-1;
         procInfo.procs[i].status = FALSE;
+        mutexes[i] = 0;
     }
 
     // Status = kmalloc(sizeof(int) * procInfo.numCores, (void **)&(procInfo.cores));

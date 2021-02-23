@@ -42,6 +42,7 @@ typedef struct proc_t
 
 typedef struct
 {
+    pid_t pid;
     proc_t *currentProc;
     EFI_EVENT callingEvent;
     UINTN status;
