@@ -3,6 +3,7 @@
 #include <PiMultiPhase.h>
 #include <MpService.h>
 #include "stdio.h"
+#include <stdatomic.h>
 
 #define kmalloc(x, y) gBS->AllocatePool(EfiReservedMemoryType, x, y) //IN* , OUT**
 #define free(x) gBS->FreePool(x)
@@ -13,6 +14,8 @@ extern EFI_BOOT_SERVICES *gBS;
 
 typedef int pid_t;
 typedef long long register_t;
+
+typedef volatile int mutex_t;
 
 typedef struct
 {
@@ -70,3 +73,8 @@ EXAMPLE_DEVICE *Device;
 void TimerHandler(IN EFI_EVENT Event, IN VOID *Context);
 EFI_STATUS addProcToQueue(void *func, void *args);
 EFI_STATUS initScheduler(UINTN CoreCount);
+
+mutex_t mutexes[4];
+
+void acquireMutex(mutex_t *mutex);
+void releaseMutex(mutex_t *mutex);

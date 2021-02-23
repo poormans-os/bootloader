@@ -22,6 +22,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     //Clean Proccesses
     for (size_t i = 0; i < procInfo.numCores; i++)
     {
+        acquireMutex(&mutexes[i]);
         if (procInfo.procs[i].status == TRUE)
         {
             procInfo.procs[i].status = FALSE;
@@ -30,17 +31,20 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
             gBS->CloseEvent(procInfo.procs[i].callingEvent);
             printf("Event close Successfully. %d\r\n", i);
         }
+        releaseMutex(&mutexes[i]);
     }
 
     //Select A proc
     int coreNum = 0;
     for (coreNum = 0; coreNum < procInfo.numCores; coreNum++)
     {
+        acquireMutex(&mutexes[coreNum]);
         if (procInfo.procs[coreNum].currentProc == 0)
         {
             procInfo.procs[coreNum].currentProc = current_proc;
             break;
         }
+        releaseMutex(&mutexes[coreNum]);
     }
 
     //////// Critical Code Section End ////////
@@ -57,8 +61,10 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
 
     //No core was found
     if (coreNum == procInfo.numCores)
+    {
+        printf("No Core was found\r\n");
         return;
-
+    }
     printf("Core Found %d, %d, %d\r\n", coreNum, procInfo.procs[coreNum].currentProc, current_proc);
 
     // Create an Event, required to call StartupThisAP in non-blocking mode
@@ -90,6 +96,19 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     {
         printf("Event creation failed: %d\r\n", Status);
     }
+}
+
+void acquireMutex(mutex_t *mutex)
+{
+    while (!__sync_bool_compare_and_swap(mutex, 0, 1))
+    {
+        __asm__ volatile("pause");
+    }
+}
+
+void releaseMutex(mutex_t *mutex)
+{
+    *mutex = 0;
 }
 
 EFI_STATUS addProcToQueue(void *func, void *args)
@@ -136,7 +155,7 @@ EFI_STATUS initScheduler(UINTN CoreCount)
     Status = gBS->SetTimer(
         Device->PeriodicTimer,
         TimerPeriodic,
-        TIMER_PERIOD_MILLISECONDS(100));
+        TIMER_PERIOD_MILLISECONDS(1000));
     if (EFI_ERROR(Status))
         return Status;
 
