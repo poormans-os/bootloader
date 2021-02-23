@@ -2,6 +2,14 @@
 
 void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
 {
+    printf("TESTS: ");
+    for (size_t i = 0; i < 5; i++)
+    {
+        putchar(tests[i]);
+    }
+    putchar('\r');
+    putchar('\n');
+
     proc_t *current_proc = NULL;
 
     // if (current_proc->next != NULL)
@@ -36,7 +44,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
             }
             else
             {
-                while (current_proc->next || !found)
+                while (current_proc->next && !found)
                 {
                     if (current_proc == procInfo.procs[i].currentProc)
                     {
@@ -58,9 +66,9 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
                 printf("Event close Successfully. %d\r\n", i);
                 //Free The struct, Stored at procInfo.procs[i].currentProc
             }
-            else
-                //The problem is with the fact that the proc with the pid should have just stopped running, And thats a problem
-                printf("PROBLEM\r\n");
+            // else
+            //The problem is with the fact that the proc with the pid should have just stopped running, And thats a problem
+            // printf("PROBLEM\r\n");
         }
     }
 
@@ -97,7 +105,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
         //printf("No Core was found\r\n");
         return;
     }
-    printf("Core Found %d, 0x%x 0x%x, %d\r\n", coreNum, procInfo.procs[coreNum].currentProc->regs.eip, testPrint, current_proc->pid);
+    printf("Core Found %d, 0x%x, %d\r\n", coreNum, procInfo.procs[coreNum].currentProc->regs.eip, current_proc->pid);
 
     // Create an Event, required to call StartupThisAP in non-blocking mode
     Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &procInfo.procs[coreNum].callingEvent);
@@ -209,7 +217,7 @@ EFI_STATUS initScheduler(UINTN CoreCount)
     for (size_t i = 0; i < procInfo.numCores; i++)
     {
         procInfo.procs[i].currentProc = 0; //(void *)-1;
-        procInfo.procs[i].status = FALSE;
+        procInfo.procs[i].status = TRUE;
         mutexes[i] = 0;
     }
 

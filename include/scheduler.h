@@ -18,8 +18,7 @@ EFI_MP_SERVICES_PROTOCOL *MpProto;
 
 extern EFI_SYSTEM_TABLE *SystemTable;
 extern EFI_BOOT_SERVICES *gBS;
-
-extern void testPrint(char *s);
+extern char tests[5];
 
 typedef int pid_t;
 typedef long long register_t;
