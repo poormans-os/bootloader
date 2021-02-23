@@ -2,7 +2,7 @@
 
 void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
 {
-    EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
+    proc_t *current_proc = NULL;
 
     // if (current_proc->next != NULL)
     //     current_proc = current_proc->next;
@@ -15,8 +15,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     if (!current_proc)
         return;
 
-    EFI_MP_SERVICES_PROTOCOL *MpProto = NULL;
-    EFI_STATUS Status = gBS->LocateProtocol(&gEfiMpServiceProtocolGuid, NULL, (void **)&MpProto);
+    EFI_STATUS Status = EFI_SUCCESS;
 
     //////// Critical Code Section Begin ////////
 
@@ -29,6 +28,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
         if (procInfo.procs[i].status == TRUE)
         {
             //Remove the proc with the same pid
+#pragma region find
             if (current_proc == procInfo.procs[i].currentProc)
             {
                 found = 1;
@@ -41,13 +41,14 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
                     if (current_proc == procInfo.procs[i].currentProc)
                     {
                         temp = current_proc->next;
-                        current_proc->next = temp->next;
+                        current_proc->next = temp->next ? temp->next : NULL;
                         found = 1;
                     }
                     else
                         current_proc = current_proc->next;
                 }
             }
+#pragma endregion find
             if (found)
             {
                 procInfo.procs[i].status = FALSE;
@@ -73,9 +74,12 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
             break;
         }
     }
-    releaseMutex(&mutexes[0]);
 
+    releaseMutex(&mutexes[0]);
     //////// Critical Code Section End ////////
+
+    if (!current_proc)
+        return;
 
     // int coreNum = 0;
     // for (coreNum = 0; coreNum < procInfo.numCores; coreNum++)
@@ -90,10 +94,10 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     //No core was found
     if (coreNum == procInfo.numCores)
     {
-        printf("No Core was found\r\n");
+        //printf("No Core was found\r\n");
         return;
     }
-    printf("Core Found %d, %d, %d\r\n", coreNum, procInfo.procs[coreNum].currentProc, current_proc->pid);
+    printf("Core Found %d, 0x%x 0x%x, %d\r\n", coreNum, procInfo.procs[coreNum].currentProc->regs.eip, testPrint, current_proc->pid);
 
     // Create an Event, required to call StartupThisAP in non-blocking mode
     Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &procInfo.procs[coreNum].callingEvent);
@@ -156,14 +160,17 @@ EFI_STATUS addProcToQueue(void *func, void *args)
     proc->next = NULL;
 
     proc_t *last = pqueue;
+
+    acquireMutex(&mutexes[0]);
     if (!last)
-    {
         pqueue = proc;
-        return status;
+    else
+    {
+        while (last->next != NULL)
+            last = last->next;
+        last->next = proc;
     }
-    while (last->next != NULL)
-        last = last->next;
-    last->next = proc;
+    releaseMutex(&mutexes[0]);
 
     return status;
 }

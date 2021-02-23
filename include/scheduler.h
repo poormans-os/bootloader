@@ -1,3 +1,8 @@
+#pragma once
+
+#ifndef __SCHEDUEL_H
+#define __SCHEDUEL_H
+
 #include <Uefi.h>
 #include <Uefilib.h>
 #include <PiMultiPhase.h>
@@ -9,8 +14,12 @@
 #define free(x) gBS->FreePool(x)
 #define TIMER_PERIOD_MILLISECONDS(Milliseconds) (UINT64)(Milliseconds) * 10000
 
+EFI_MP_SERVICES_PROTOCOL *MpProto;
+
 extern EFI_SYSTEM_TABLE *SystemTable;
 extern EFI_BOOT_SERVICES *gBS;
+
+extern void testPrint(char *s);
 
 typedef int pid_t;
 typedef long long register_t;
@@ -56,8 +65,7 @@ typedef struct
 
 static UINT32 pidCount = 1;
 static procs_info_t procInfo;
-proc_t *pqueue;
-proc_t *current_proc;
+static proc_t *pqueue = NULL;
 
 typedef struct
 {
@@ -79,3 +87,5 @@ mutex_t mutexes[4];
 
 void acquireMutex(mutex_t *mutex);
 void releaseMutex(mutex_t *mutex);
+
+#endif

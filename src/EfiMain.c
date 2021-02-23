@@ -4,20 +4,20 @@
 
 EFI_SYSTEM_TABLE *SystemTable;
 EFI_BOOT_SERVICES *gBS;
+static EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
 
 void testPrint(char *s)
 {
     printf("Hello Threading %s\r\n", s);
+    return;
 }
 
 EFI_STATUS
 EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 {
-    EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
     SystemTable = ST;
     gBS = SystemTable->BootServices;
 
-    EFI_MP_SERVICES_PROTOCOL *MpProto = NULL;
     UINTN NumEnabled = 0;
     UINTN NumProc = 0;
     EFI_PROCESSOR_INFORMATION Tcb = {0};
