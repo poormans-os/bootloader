@@ -6,18 +6,24 @@ EFI_SYSTEM_TABLE *SystemTable;
 EFI_BOOT_SERVICES *gBS;
 static EFI_GUID gEfiMpServiceProtocolGuid = {0x3fdda605, 0xa76e, 0x4f46, {0xad, 0x29, 0x12, 0xf4, 0x53, 0x1b, 0x3d, 0x08}};
 
-char tests[5] = {' '};
-
-void testPrint(int s)
+typedef struct
 {
+    int index;
+    char data;
+} testArg;
+
+char tests[5] = {'0', '0', '0', '0', '0'};
+
+void testPrint(testArg *arg)
+{
+    gBS->Stall(1000000);
     // printf("Hello Threading %s\r\n", s);
-    tests[s] = s + '0';
+    tests[arg->index] = arg->data;
 }
 
 EFI_STATUS
 EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 {
-    int intTest[5] = {1, 2, 3, 4, 5};
     SystemTable = ST;
     gBS = SystemTable->BootServices;
 
@@ -101,7 +107,11 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 
     for (size_t i = 0; i < 5; i++)
     {
-        addProcToQueue(testPrint, intTest + i);
+        testArg *argTest = NULL;
+        kmalloc(sizeof(testArg), (void **)&argTest);
+        argTest->index = i;
+        argTest->data = '1';
+        addProcToQueue(testPrint, argTest);
     }
 
     // addProcToQueue(testPrint, 1);

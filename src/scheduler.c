@@ -10,7 +10,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     putchar('\r');
     putchar('\n');
 
-    proc_t *current_proc = NULL;
+    // proc_t *current_proc = NULL;
 
     // if (current_proc->next != NULL)
     //     current_proc = current_proc->next;
@@ -19,7 +19,6 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     //     current_proc = pqueue;
     //     pqueue = pqueue->next;
     // }
-    current_proc = pqueue;
     if (!current_proc)
         return;
 
@@ -33,7 +32,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     {
         proc_t *temp = NULL;
         int found = 0;
-        if (procInfo.procs[i].status == TRUE)
+        if (procInfo.procs[i].status == TRUE && procInfo.procs[i].currentProc != NULL)
         {
             //Remove the proc with the same pid
 #pragma region find
@@ -60,7 +59,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
             if (found)
             {
                 procInfo.procs[i].status = FALSE;
-                procInfo.procs[i].currentProc = 0;
+                procInfo.procs[i].currentProc = NULL;
                 gBS->CloseEvent(procInfo.procs[i].callingEvent);
                 current_proc = current_proc->next;
                 printf("Event close Successfully. %d\r\n", i);
@@ -86,7 +85,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     releaseMutex(&mutexes[0]);
     //////// Critical Code Section End ////////
 
-    if (!current_proc)
+    if (current_proc == NULL)
         return;
 
     // int coreNum = 0;
@@ -167,11 +166,11 @@ EFI_STATUS addProcToQueue(void *func, void *args)
     proc->args = args;
     proc->next = NULL;
 
-    proc_t *last = pqueue;
+    proc_t *last = current_proc;
 
     acquireMutex(&mutexes[0]);
     if (!last)
-        pqueue = proc;
+        current_proc = proc;
     else
     {
         while (last->next != NULL)
