@@ -17,7 +17,6 @@ char tests[5] = {'0', '0', '0', '0', '0'};
 void testPrint(testArg *arg)
 {
     gBS->Stall(2000000);
-    // printf("Hello Threading %s\r\n", s);
     tests[arg->index] = arg->data;
 }
 
@@ -27,82 +26,17 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     SystemTable = ST;
     gBS = SystemTable->BootServices;
 
-    UINTN NumEnabled = 0;
-    UINTN NumProc = 0;
-    EFI_PROCESSOR_INFORMATION Tcb = {0};
+    schedulerMtx = 0;
 
     SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
     gBS->SetWatchdogTimer(0, 0, 0, NULL);
     printf("RUNNING\r\n");
 
-    // Find the MP Services Protocol
-    EFI_STATUS Status = gBS->LocateProtocol(&gEfiMpServiceProtocolGuid, NULL, (void **)&MpProto);
-    if (Status != EFI_SUCCESS)
-    {
-        printf("Unable to locate the MpService procotol: %d\r\n", Status);
-    }
-    // Get Number of Processors and Number of Enabled Processors
-    Status = MpProto->GetNumberOfProcessors(MpProto, &NumProc, &NumEnabled);
-    if (Status != EFI_SUCCESS)
-    {
-        printf("Unable to get the number of processors: %d\r\n", Status);
-    }
-    printf("number of proccesors: %d\r\n", NumProc);
-    // Get Processor Health and Location information
-
-    for (size_t i = 0; i < NumProc; i++)
-    {
-        if (i != 0)
-        {
-            Status = MpProto->EnableDisableAP(MpProto, i, TRUE, NULL);
-            if (Status != EFI_SUCCESS)
-            {
-                printf("Unable to get information for proc. %d: %d\r\n", i, Status);
-                continue;
-            }
-        }
-        Status = MpProto->GetProcessorInfo(MpProto, i, &Tcb);
-        if (Status != EFI_SUCCESS)
-        {
-            printf("Unable to get information for proc. %d: %d\r\n", i, Status);
-            continue;
-        }
-        //printf("%d: ProcID %d, Flags: 0x%x\r\n", i, Tcb.ExtendedInformation, Tcb.StatusFlag);
-    }
-    // printf("proccesor id: %d\r\nproccesor flags: %d\r\n", Tcb.ProcessorId, Tcb.StatusFlag);
-
-    // void *Event = NULL;
-    // //void *Procedure = testPrint;
-    // //void *ProcedureArgument = "1";
-    // // Create an Event, required to call StartupThisAP in non-blocking mode
-    // Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &Event);
-    // if (Status == EFI_SUCCESS)
-    // {
-    //     printf("Successful Event creation.\r\n");
-    //     // Start a Task on the specified Processor.
-    //     //Status = MpProto->StartupThisAP(MpProto, Procedure, 1, Event, 0, ProcedureArgument, NULL);
-    //     Status = EFI_SUCCESS;
-    //     if (Status == EFI_SUCCESS)
-    //     {
-    //         printf("Task successfully started.\r\n");
-    //     }
-    //     else
-    //     {
-    //         printf("Failed to start Task on CPU %d\r\n", ProcNum);
-    //         printf("\r\nStatus %d\r\n", Status);
-    //     }
-    // }
-    // else
-    // {
-    //     printf("Event creation failed: %d\r\n", Status);
-    // }
-    printf("Init\r\n");
-
     // EFI_STATUS Status;
     EFI_INPUT_KEY Key;
     UINTN KeyEvent = 0;
 
-    if (initScheduler(NumProc) != EFI_SUCCESS)
+    if (initScheduler() != EFI_SUCCESS)
         printf("Error\r\n");
 
     for (size_t i = 0; i < 5; i++)
@@ -113,17 +47,6 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         argTest->data = '1' + i;
         addProcToQueue(testPrint, argTest);
     }
-    testArg *argTest = NULL;
-    kmalloc(sizeof(testArg), (void **)&argTest);
-    argTest->index = 0;
-    argTest->data = '1';
-    addProcToQueue(testPrint, argTest);
-
-    // addProcToQueue(testPrint, 1);
-    // addProcToQueue(testPrint, 2);
-    // addProcToQueue(testPrint, 3);
-    // addProcToQueue(testPrint, 4);
-    // addProcToQueue(testPrint, 5);
 
     while (1)
     {
