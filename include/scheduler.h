@@ -64,7 +64,7 @@ typedef struct
 
 static UINT32 pidCount = 1;
 static procs_info_t procInfo;
-static proc_t *current_proc = NULL;
+static proc_t *procQueue = NULL;
 
 typedef struct
 {
@@ -80,9 +80,9 @@ EXAMPLE_DEVICE *Device;
 
 void TimerHandler(IN EFI_EVENT Event, IN VOID *Context);
 EFI_STATUS addProcToQueue(void *func, void *args);
-EFI_STATUS initScheduler(UINTN CoreCount);
+EFI_STATUS initScheduler();
 
-mutex_t mutexes[4];
+mutex_t schedulerMtx;
 
 void acquireMutex(mutex_t *mutex);
 void releaseMutex(mutex_t *mutex);
