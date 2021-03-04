@@ -64,7 +64,7 @@ typedef struct
 
 static UINT32 pidCount = 1;
 static procs_info_t procInfo;
-static proc_t *current_proc = NULL;
+static proc_t *procQueue = NULL;
 
 typedef struct
 {

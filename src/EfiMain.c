@@ -16,7 +16,7 @@ char tests[5] = {'0', '0', '0', '0', '0'};
 
 void testPrint(testArg *arg)
 {
-    gBS->Stall(1000000);
+    gBS->Stall(2000000);
     // printf("Hello Threading %s\r\n", s);
     tests[arg->index] = arg->data;
 }
@@ -110,9 +110,14 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
         testArg *argTest = NULL;
         kmalloc(sizeof(testArg), (void **)&argTest);
         argTest->index = i;
-        argTest->data = '1';
+        argTest->data = '1' + i;
         addProcToQueue(testPrint, argTest);
     }
+    testArg *argTest = NULL;
+    kmalloc(sizeof(testArg), (void **)&argTest);
+    argTest->index = 0;
+    argTest->data = '1';
+    addProcToQueue(testPrint, argTest);
 
     // addProcToQueue(testPrint, 1);
     // addProcToQueue(testPrint, 2);
