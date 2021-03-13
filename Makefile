@@ -8,10 +8,13 @@ default: all
 TARGET := bin/efi/boot/BOOTX64.EFI
 
 SRCS += $(shell find src/ -name '*.c')
+SRCS += $(shell find lang/ -name '*.c')
 
 OBJS := $(SRCS:%=build/%.o)
 
 INCLUDE_DIRS += include
+INCLUDE_DIRS += lang
+
 INCLUDE_DIRS += edk2/MdePkg/Include
 INCLUDE_DIRS += edk2/MdePkg/Include/X64
 INCLUDE_DIRS += edk2/MdePkg/Include/Protocol

@@ -3,11 +3,13 @@
 #ifndef __SCHEDUEL_H
 #define __SCHEDUEL_H
 
+#include "stdio.h"
+#include "mutex.h"
+
 #include <Uefi.h>
 #include <Uefilib.h>
 #include <PiMultiPhase.h>
 #include <MpService.h>
-#include "stdio.h"
 #include <stdatomic.h>
 
 #define kmalloc(x, y) gBS->AllocatePool(EfiReservedMemoryType, x, y) //IN* , OUT**
@@ -22,8 +24,6 @@ extern char tests[5];
 
 typedef int pid_t;
 typedef long long register_t;
-
-typedef volatile int mutex_t;
 
 typedef struct
 {
@@ -81,10 +81,5 @@ EXAMPLE_DEVICE *Device;
 void TimerHandler(IN EFI_EVENT Event, IN VOID *Context);
 EFI_STATUS addProcToQueue(void *func, void *args);
 EFI_STATUS initScheduler();
-
-mutex_t schedulerMtx;
-
-void acquireMutex(mutex_t *mutex);
-void releaseMutex(mutex_t *mutex);
 
 #endif

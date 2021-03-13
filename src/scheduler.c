@@ -2,13 +2,13 @@
 
 void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
 {
-    printf("TESTS: ");
-    for (size_t i = 0; i < 5; i++)
-    {
-        putchar(tests[i]);
-    }
-    putchar('\r');
-    putchar('\n');
+    // printf("TESTS: ");
+    // for (size_t i = 0; i < 5; i++)
+    // {
+    //     putchar(tests[i]);
+    // }
+    // putchar('\r');
+    // putchar('\n');
 
     EFI_STATUS Status = EFI_SUCCESS;
 
@@ -62,19 +62,6 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
     {
         printf("Event creation failed: %d\r\n", Status);
     }
-}
-
-void acquireMutex(mutex_t *mutex)
-{
-    while (!__sync_bool_compare_and_swap(mutex, 0, 1))
-        __asm__ volatile("pause");
-    // printf("acquireMutex\r\n");
-}
-
-void releaseMutex(mutex_t *mutex)
-{
-    *mutex = 0;
-    // printf("releaseMutex\r\n");
 }
 
 EFI_STATUS addProcToQueue(void *func, void *args)
@@ -148,7 +135,6 @@ EFI_STATUS initScheduler()
         }
     }
 
-    EFI_STATUS Status;
     Status = gBS->CreateEvent(
         EVT_TIMER | EVT_NOTIFY_SIGNAL, // Type
         TPL_NOTIFY,                    // NotifyTpl
