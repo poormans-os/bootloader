@@ -78,6 +78,7 @@ int bf__main(bf__data *data)
         default:
             break;
         }
+        prgPointer++;
     }
 
     return 0;
