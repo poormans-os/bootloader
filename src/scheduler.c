@@ -33,11 +33,9 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
             procInfo.procs[coreNum].currentProc = procQueue;
             procQueue = procQueue->next;
             procInfo.procs[coreNum].status = FALSE;
-            printf("proc closed Successfully. %d\r\n", coreNum);
             break;
         }
     }
-
     releaseMutex(&schedulerMtx);
     //////// Critical Code Section End ////////
 
@@ -50,11 +48,11 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
         Status = MpProto->StartupThisAP(MpProto, (void *)procInfo.procs[coreNum].currentProc->regs.eip, coreNum + 1, procInfo.procs[coreNum].callingEvent, 0, procInfo.procs[coreNum].currentProc->args, (void *)&procInfo.procs[coreNum].status);
         if (Status == EFI_SUCCESS)
         {
-            printf("Event Created On Core %d\r\n", coreNum);
+            printf("Event Created On Core %d\r\n", coreNum + 1);
         }
         else
         {
-            printf("Failed to start Task on CPU %d\r\n", coreNum);
+            printf("Failed to start Task on CPU %d\r\n", coreNum + 1);
             printf("\r\nStatus %d\r\n", Status);
         }
     }
