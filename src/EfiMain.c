@@ -28,6 +28,8 @@ void printData(char *data)
     {
         if (data[0] != 0)
             printf("%s\r\n", data);
+        else
+            printf("skipped\r\n");
         gBS->Stall(2000000);
     }
 }
@@ -44,7 +46,6 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     gBS->SetWatchdogTimer(0, 0, 0, NULL);
     printf("RUNNING\r\n");
 
-    // EFI_STATUS Status;
     EFI_INPUT_KEY Key;
     UINTN KeyEvent = 0;
 
@@ -60,14 +61,13 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     //     addProcToQueue(testPrint, argTest);
     // }
 
-    bf__data *bfmain;
+    bf__data *bfmain = NULL;
     kmalloc(sizeof(bf__data), (void **)&bfmain);
-    bfmain->program = "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++.";
-    //bfmain->program = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.";
+    // bfmain->program = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."; //Hello World!
+    bfmain->program = ">>+>+>><<<<<++++++++++++[->>>[-]<[->>>+<<<]>>>[-<<+<+>>>]<<<<[->>>>+<<<<]>>>>[-<+>]<<<[->>>+<<<]>>>[-<<<+<+>>>>]<<<[-]>>><[->+<]>[-<+<<+>>>]<<<<<]>>>>."; //Fibbonacci 89 (Y)
     bfmain->len = strlen(bfmain->program);
     memset(bfmain->outBuffer, 0, 1024);
     addProcToQueue(bf__main, (void *)bfmain);
-
     addProcToQueue(printData, (void *)bfmain->outBuffer);
 
     while (1)

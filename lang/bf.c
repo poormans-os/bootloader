@@ -2,8 +2,6 @@
 
 int bf__main(bf__data *data)
 {
-    printf("HW BF!\r\n");
-
     char *program = data->program;
     int len = data->len;
     char *outBuffer = data->outBuffer;
@@ -27,6 +25,7 @@ int bf__main(bf__data *data)
             if (pointer != 0)
                 pointer--;
             // TODD else END_OF_TAPE
+            break;
         case '+': // TODO overflow
             tape[pointer]++;
             break;
@@ -78,7 +77,7 @@ int bf__main(bf__data *data)
         default:
             break;
         }
+        prgPointer++;
     }
-
     return 0;
 }
