@@ -6,6 +6,11 @@ void acquireMutex(mutex_t *mutex)
         __asm__ volatile("pause");
 }
 
+int checkMutex(mutex_t *mutex)
+{
+    return *mutex;
+}
+
 void releaseMutex(mutex_t *mutex)
 {
     *mutex = 0;

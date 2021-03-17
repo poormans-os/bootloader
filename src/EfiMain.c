@@ -34,20 +34,27 @@ void printData(char *data)
     }
 }
 
+void getInput(void)
+{
+    int a = 0;
+
+    printf("Please Enter A String: ");
+    scanf("%d", &a);
+
+    printf("\r\n%d\r\n", a);
+}
+
 EFI_STATUS
 EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
 {
+    scanfPID = 0;
+
     SystemTable = ST;
     gBS = SystemTable->BootServices;
-
-    schedulerMtx = 0;
 
     SystemTable->ConOut->Reset(SystemTable->ConOut, 1);
     gBS->SetWatchdogTimer(0, 0, 0, NULL);
     printf("RUNNING\r\n");
-
-    EFI_INPUT_KEY Key;
-    UINTN KeyEvent = 0;
 
     if (initScheduler() != EFI_SUCCESS)
         printf("Error\r\n");
@@ -61,21 +68,30 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     //     addProcToQueue(testPrint, argTest);
     // }
 
-    bf__data *bfmain = NULL;
-    kmalloc(sizeof(bf__data), (void **)&bfmain);
-    // bfmain->program = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."; //Hello World!
-    bfmain->program = ">>+>+>><<<<<++++++++++++[->>>[-]<[->>>+<<<]>>>[-<<+<+>>>]<<<<[->>>>+<<<<]>>>>[-<+>]<<<[->>>+<<<]>>>[-<<<+<+>>>>]<<<[-]>>><[->+<]>[-<+<<+>>>]<<<<<]>>>>."; //Fibbonacci 89 (Y)
-    bfmain->len = strlen(bfmain->program);
-    memset(bfmain->outBuffer, 0, 1024);
-    addProcToQueue(bf__main, (void *)bfmain);
-    addProcToQueue(printData, (void *)bfmain->outBuffer);
+    // bf__data *bfmain = NULL;
+    // kmalloc(sizeof(bf__data), (void **)&bfmain);
+    // // bfmain->program = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."; //Hello World!
+    // bfmain->program = ">>+>+>><<<<<++++++++++++[->>>[-]<[->>>+<<<]>>>[-<<+<+>>>]<<<<[->>>>+<<<<]>>>>[-<+>]<<<[->>>+<<<]>>>[-<<<+<+>>>>]<<<[-]>>><[->+<]>[-<+<<+>>>]<<<<<]>>>>."; //Fibbonacci 89 (Y)
+    // bfmain->len = strlen(bfmain->program);
+    // memset(bfmain->outBuffer, 0, 1024);
+    // addProcToQueue(bf__main, (void *)bfmain);
+    // addProcToQueue(printData, (void *)bfmain->outBuffer);
+
+    addProcToQueue(getInput, NULL);
 
     while (1)
     {
-        SystemTable->BootServices->WaitForEvent(1, &SystemTable->ConIn->WaitForKey, &KeyEvent);
-        SystemTable->ConIn->ReadKeyStroke(SystemTable->ConIn, &Key);
-        SystemTable->ConIn->Reset(SystemTable->ConIn, FALSE);
-        printf("The value is %c", Key.UnicodeChar);
+        // scanf
+        // init
+        // mutex
+        // pid
+        // release
+        // SystemTable->BootServices->WaitForEvent(1, &SystemTable->ConIn->WaitForKey, &KeyEvent);
+        // SystemTable->ConIn->ReadKeyStroke(SystemTable->ConIn, &Key);
+        // SystemTable->ConIn->Reset(SystemTable->ConIn, FALSE);
+        // printf("%d", Key.UnicodeChar);
+        //scanf("%d", );
+        kernel_scanf();
     }
 
     SystemTable->RuntimeServices->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, NULL);
