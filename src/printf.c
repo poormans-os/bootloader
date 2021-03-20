@@ -319,7 +319,7 @@ int printf(const char *restrict format, ...)
     return written;
 }
 
-unsigned short getKey()
+unsigned short kernelGetchar()
 {
 
     EFI_INPUT_KEY Key;
@@ -333,6 +333,16 @@ unsigned short getKey()
     return Key.UnicodeChar;
 }
 
+unsigned char getchar()
+{
+    scanfPID = 1;
+    while (scanfPID == 1)
+    {
+    }
+
+    return scanfBuffer;
+}
+
 int scanf(const char *str, ...)
 {
     // mutex
@@ -342,16 +352,17 @@ int scanf(const char *str, ...)
     int i = 0, j = 0, ret = 0;
     char buff[100] = {0};
     char *out_loc;
-    while (scanfBuffer != 13)
+
+    char temp = '\0';
+
+    while (temp != 13)
     {
-        scanfPID = 1;
-        while (scanfPID == 1)
-        {
-        }
+        temp = getchar();
+
         //Result in scanfBuffer
-        if (scanfBuffer)
+        if (temp)
         {
-            buff[i] = scanfBuffer;
+            buff[i] = temp;
             i++;
         }
     }
@@ -401,6 +412,18 @@ int scanf(const char *str, ...)
     return ret;
 }
 
+char *fgets(char *str, int n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        str[i] = getchar();
+        if (str[i] == 13)
+            break;
+    }
+
+    return str;
+}
+
 int kernel_scanf()
 {
     while (1)
@@ -409,13 +432,8 @@ int kernel_scanf()
         {
         }
 
-        //Scanf
-        scanfBuffer = getKey();
+        scanfBuffer = kernelGetchar();
 
         scanfPID = 0;
-
-        // check pid
-        // write to buffer
-        // clear buffer
     }
 }

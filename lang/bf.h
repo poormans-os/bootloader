@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdio.h"
+#include "utils.h"
 
 #define bf__TAPE_LEN 1024
 
@@ -23,4 +24,5 @@ enum bf__tokens
     COMMA,         // , TODO Implement input
 };
 
+int bf__run();
 int bf__main();

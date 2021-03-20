@@ -1,5 +1,24 @@
 #include "bf.h"
 
+int bf__run()
+{
+    const int bufferLen = 1024;
+    bf__data *bfmain = NULL;
+
+    kmalloc(sizeof(bf__data), (void **)&bfmain);
+    kmalloc(bufferLen, (void **)&bfmain->program);
+    // bfmain->program = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."; //Hello World!
+    //bfmain->program = ">>+>+>><<<<<++++++++++++[->>>[-]<[->>>+<<<]>>>[-<<+<+>>>]<<<<[->>>>+<<<<]>>>>[-<+>]<<<[->>>+<<<]>>>[-<<<+<+>>>>]<<<[-]>>><[->+<]>[-<+<<+>>>]<<<<<]>>>>."; //Fibbonacci 89 (Y)
+    bfmain->program = fgets(bfmain->program, bufferLen);
+    putchar('\r');
+    putchar('\n');
+    bfmain->len = strlen(bfmain->program);
+    memset(bfmain->outBuffer, 0, 1024);
+    printf("Running bf__main\r\n");
+    return bf__main(bfmain);
+    //addProcToQueue(printData, (void *)bfmain->outBuffer);
+}
+
 int bf__main(bf__data *data)
 {
     char *program = data->program;
@@ -33,7 +52,7 @@ int bf__main(bf__data *data)
             tape[pointer]--;
             break;
         case '.':
-            //putchar(tape[pointer]); //TODO
+            putchar(tape[pointer]); //TODO
             outBuffer[bufferCounter] = tape[pointer];
             bufferCounter++;
             break;

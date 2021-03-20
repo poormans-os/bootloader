@@ -77,7 +77,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     // addProcToQueue(bf__main, (void *)bfmain);
     // addProcToQueue(printData, (void *)bfmain->outBuffer);
 
-    addProcToQueue(getInput, NULL);
+    addProcToQueue(bf__run, NULL);
 
     while (1)
     {
