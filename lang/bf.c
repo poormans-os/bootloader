@@ -1,6 +1,6 @@
 #include "bf.h"
 
-int bf__run()
+int bf__run(char *program)
 {
     const int bufferLen = 1024;
     bf__data *bfmain = NULL;
@@ -9,7 +9,16 @@ int bf__run()
     kmalloc(bufferLen, (void **)&bfmain->program);
     // bfmain->program = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."; //Hello World!
     //bfmain->program = ">>+>+>><<<<<++++++++++++[->>>[-]<[->>>+<<<]>>>[-<<+<+>>>]<<<<[->>>>+<<<<]>>>>[-<+>]<<<[->>>+<<<]>>>[-<<<+<+>>>>]<<<[-]>>><[->+<]>[-<+<<+>>>]<<<<<]>>>>."; //Fibbonacci 89 (Y)
-    bfmain->program = fgets(bfmain->program, bufferLen);
+    if (program != NULL)
+    {
+        bfmain->program = program;
+    }
+    else
+    {
+        printf("Please Enter Your Program:\r\n");
+        bfmain->program = fgets(bfmain->program, bufferLen);
+    }
+
     putchar('\r');
     putchar('\n');
     bfmain->len = strlen(bfmain->program);

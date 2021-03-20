@@ -16,6 +16,7 @@ INCLUDE_DIRS += include
 INCLUDE_DIRS += lang
 
 INCLUDE_DIRS += edk2/MdePkg/Include
+INCLUDE_DIRS += edk2/MdePkg/Include/GUID
 INCLUDE_DIRS += edk2/MdePkg/Include/X64
 INCLUDE_DIRS += edk2/MdePkg/Include/Protocol
 INCLUDE_DIRS += edk2/basetools/source/c/genfw

@@ -1,6 +1,7 @@
 #include <Uefi.h>
 #include "stdio.h"
 #include "scheduler.h"
+#include "fileio.h"
 
 #include "bf.h"
 
@@ -77,7 +78,12 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     // addProcToQueue(bf__main, (void *)bfmain);
     // addProcToQueue(printData, (void *)bfmain->outBuffer);
 
-    addProcToQueue(bf__run, NULL);
+    char *bf__program = loadfile(L"main.bf", ImageHandle);
+
+    if (NULL == bf__program)
+        printf("LoadFile ERROR\r\n");
+
+    addProcToQueue(bf__run, bf__program);
 
     while (1)
     {
