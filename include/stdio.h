@@ -18,4 +18,4 @@ size_t strlen(const char *str);
 
 char *fgets(char *str, int n);
 int scanf(const char *format, ...);
-int kernel_scanf();
+int kernelScanf();

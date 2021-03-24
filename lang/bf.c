@@ -5,12 +5,14 @@ int bf__run(char *program)
     const int bufferLen = 1024;
     bf__data *bfmain = NULL;
 
+    printf("HI bf__run\r\n");
     kmalloc(sizeof(bf__data), (void **)&bfmain);
     kmalloc(bufferLen, (void **)&bfmain->program);
-    // bfmain->program = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."; //Hello World!
-    //bfmain->program = ">>+>+>><<<<<++++++++++++[->>>[-]<[->>>+<<<]>>>[-<<+<+>>>]<<<<[->>>>+<<<<]>>>>[-<+>]<<<[->>>+<<<]>>>[-<<<+<+>>>>]<<<[-]>>><[->+<]>[-<+<<+>>>]<<<<<]>>>>."; //Fibbonacci 89 (Y)
+    printf("HI bf__run\r\n");
+
     if (program != NULL)
     {
+        free(bfmain->program);
         bfmain->program = program;
     }
     else
@@ -25,7 +27,6 @@ int bf__run(char *program)
     memset(bfmain->outBuffer, 0, 1024);
     printf("Running bf__main\r\n");
     return bf__main(bfmain);
-    //addProcToQueue(printData, (void *)bfmain->outBuffer);
 }
 
 int bf__main(bf__data *data)
@@ -39,10 +40,10 @@ int bf__main(bf__data *data)
     unsigned int prgPointer = 0;
     unsigned int bracket = 0;
     short tape[bf__TAPE_LEN] = {0};
-    printf("HI\r\n");
-    printf("str: %s\r\n", data->program);
-    printf("str: %s\r\n", data->program);
-    printf("str: %s\r\n", data->program);
+    printf("HI bf__main\r\n");
+    // printf("str: %s\r\n", data->program);
+    // printf("str: %s\r\n", data->program);
+    // printf("str: %s\r\n", data->program);
 
     while (prgPointer < len)
     {
