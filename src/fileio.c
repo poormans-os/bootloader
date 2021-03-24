@@ -2,14 +2,12 @@
 
 char *loadfile(IN CHAR16 *path, IN EFI_HANDLE ImageHandle)
 {
-
     EFI_GUID imageProtocol = EFI_LOADED_IMAGE_PROTOCOL_GUID;
     EFI_GUID pathProtocol = EFI_DEVICE_PATH_PROTOCOL_GUID;
     EFI_GUID fsProtocol = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
-    //EFI_GUID fileInfoProtocol = (EFI_GUID){0x09576e92, 0x6d3f, 0x11d2, {0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b}};
-    // EFI_GUID fsProtocol = EFI_FILE_INFO;
-
+    EFI_GUID fileInfoProtocol = EFI_FILE_INFO_ID;
     EFI_LOADED_IMAGE_PROTOCOL *loadedImage = NULL;
+    EFI_STATUS Status = EFI_SUCCESS;
     if (EFI_SUCCESS != gBS->HandleProtocol(ImageHandle, &imageProtocol, (void **)&loadedImage))
     {
         printf("1\r\n");
@@ -31,13 +29,20 @@ char *loadfile(IN CHAR16 *path, IN EFI_HANDLE ImageHandle)
     EFI_FILE_PROTOCOL *fileHandle = NULL;
     if (EFI_SUCCESS != rootFS->Open(rootFS, &fileHandle, path, EFI_FILE_MODE_READ, 0))
         printf("5\r\n");
-
-    int size = 1024;
+    UINTN buffSize = FILE_INFO_BUFFER_SIZE;
+    EFI_FILE_INFO *fileInfo = NULL;
+    if (EFI_SUCCESS != fileHandle->GetInfo(fileHandle, &fileInfoProtocol, &buffSize, fileInfo))
+        printf("6 buffsize: %d\r\n", buffSize);
+    int size = fileInfo->FileSize;
     char *str = NULL;
-    if (EFI_SUCCESS != kmalloc(1024, (void **)str)) //TODO Fix!!!
-        printf("6\r\n");
-    fileHandle->Read(fileHandle, (void *)&size, (void *)str);
-    printf("%x: %s", str, str);
+    Status = kmalloc(fileInfo->FileSize, (void **)&str); //TODO Fix!!!
+    if (Status != EFI_SUCCESS)
+        printf("7 Status %d\r\n", Status);
+    Status = fileHandle->Read(fileHandle, (void *)&size, (void *)str);
+    if (Status != EFI_SUCCESS)
+        printf("8 status %d\r\n", Status);
+
+    printf("str: %s\r\n", str);
     return str;
 
     // int fileInfoBufferSize = 0;

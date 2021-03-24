@@ -39,6 +39,10 @@ int bf__main(bf__data *data)
     unsigned int prgPointer = 0;
     unsigned int bracket = 0;
     short tape[bf__TAPE_LEN] = {0};
+    printf("HI\r\n");
+    printf("str: %s\r\n", data->program);
+    printf("str: %s\r\n", data->program);
+    printf("str: %s\r\n", data->program);
 
     while (prgPointer < len)
     {
