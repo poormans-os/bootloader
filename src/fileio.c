@@ -29,16 +29,19 @@ char *loadfile(IN CHAR16 *path, IN EFI_HANDLE ImageHandle)
     EFI_FILE_PROTOCOL *fileHandle = NULL;
     if (EFI_SUCCESS != rootFS->Open(rootFS, &fileHandle, path, EFI_FILE_MODE_READ, 0))
         printf("5\r\n");
+
     UINTN buffSize = FILE_INFO_BUFFER_SIZE;
     EFI_FILE_INFO *fileInfo = NULL;
     if (EFI_SUCCESS != fileHandle->GetInfo(fileHandle, &fileInfoProtocol, &buffSize, fileInfo))
         printf("6 buffsize: %d\r\n", buffSize);
-    int size = fileInfo->FileSize;
+
     char *str = NULL;
-    Status = kmalloc(fileInfo->FileSize, (void **)&str); //TODO Fix!!!
+    Status = kmalloc(fileInfo->FileSize + 1, (void **)&str); //TODO Fix!!!
     if (Status != EFI_SUCCESS)
         printf("7 Status %d\r\n", Status);
-    Status = fileHandle->Read(fileHandle, (void *)&size, (void *)str);
+    str[fileInfo->FileSize] = '\0';
+
+    Status = fileHandle->Read(fileHandle, (void *)&fileInfo->FileSize, (void *)str);
     if (Status != EFI_SUCCESS)
         printf("8 status %d\r\n", Status);
 

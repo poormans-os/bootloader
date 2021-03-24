@@ -39,10 +39,6 @@ int bf__main(bf__data *data)
     unsigned int prgPointer = 0;
     unsigned int bracket = 0;
     short tape[bf__TAPE_LEN] = {0};
-    printf("HI\r\n");
-    printf("str: %s\r\n", data->program);
-    printf("str: %s\r\n", data->program);
-    printf("str: %s\r\n", data->program);
 
     while (prgPointer < len)
     {
@@ -51,26 +47,34 @@ int bf__main(bf__data *data)
         case '>':
             if (pointer < bf__TAPE_LEN)
                 pointer++;
-            // TODO else END_OF_TAPE
+            else
+                return END_OF_TAPE;
             break;
         case '<':
-            if (pointer != 0)
+            if (pointer > 0)
                 pointer--;
-            // TODD else END_OF_TAPE
+            else
+                return END_OF_TAPE;
             break;
-        case '+': // TODO overflow
-            tape[pointer]++;
+        case '+':
+            if (tape[pointer] < MAX_CHAR_VALUE)
+                tape[pointer]++;
+            else
+                return OVERFLOW;
             break;
-        case '-': // TODO underflow
-            tape[pointer]--;
+        case '-':
+            if (tape[pointer] > 0)
+                tape[pointer]--;
+            else
+                return UNDERFLOW;
             break;
         case '.':
-            putchar(tape[pointer]); //TODO
+            putchar(tape[pointer]);
             outBuffer[bufferCounter] = tape[pointer];
             bufferCounter++;
             break;
         case ',':
-            // tape[pointer] = getchar(); //TODO
+            tape[pointer] = getchar();
             break;
         case '[':
             if (tape[pointer] == 0)
