@@ -4,11 +4,11 @@ int bf__run(char *program)
 {
     const int bufferLen = 1024;
     bf__data *bfmain = NULL;
+    int result = 0;
 
     kmalloc(sizeof(bf__data), (void **)&bfmain);
     kmalloc(bufferLen, (void **)&bfmain->program);
-    // bfmain->program = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."; //Hello World!
-    //bfmain->program = ">>+>+>><<<<<++++++++++++[->>>[-]<[->>>+<<<]>>>[-<<+<+>>>]<<<<[->>>>+<<<<]>>>>[-<+>]<<<[->>>+<<<]>>>[-<<<+<+>>>>]<<<[-]>>><[->+<]>[-<+<<+>>>]<<<<<]>>>>."; //Fibbonacci 89 (Y)
+
     if (program != NULL)
     {
         bfmain->program = program;
@@ -19,13 +19,11 @@ int bf__run(char *program)
         bfmain->program = fgets(bfmain->program, bufferLen);
     }
 
-    putchar('\r');
-    putchar('\n');
     bfmain->len = strlen(bfmain->program);
     memset(bfmain->outBuffer, 0, 1024);
-    printf("Running bf__main\r\n");
-    return bf__main(bfmain);
-    //addProcToQueue(printData, (void *)bfmain->outBuffer);
+
+    result = bf__main(bfmain);
+    return result;
 }
 
 int bf__main(bf__data *data)

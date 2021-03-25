@@ -81,13 +81,12 @@ static bool print(const char *data, const size_t length)
     CHAR16 out[150] = {0};
     toLString(out, data, length);
     acquireMutex(&printfMutex);
+    SystemTable->BootServices->Stall(1000);
     SystemTable->ConOut->OutputString(SystemTable->ConOut, out);
     releaseMutex(&printfMutex);
     return true;
 }
 
-#define LONG_MAX ((long)(~0UL >> 1))
-#define LONG_MIN (~LONG_MAX)
 int isspace(int c)
 {
     return c == ' ';
@@ -108,6 +107,8 @@ int isupper(int c)
     return ('A' <= c && c <= 'Z');
 }
 
+#define LONG_MAX ((long)(~0UL >> 1))
+#define LONG_MIN (~LONG_MAX)
 // https://code.woboq.org/gcc/libiberty/strtol.c.html
 long strtol(const char *nptr, char **endptr, unsigned int base)
 {
@@ -201,7 +202,7 @@ int printf(const char *restrict format, ...)
 
     while (*format != '\0')
     {
-        size_t maxrem = 2 ^ 32 - written;
+        size_t maxrem = INT_MAX - written;
 
         if (format[0] != '%' || format[1] == '%') //check for entered parameters with %d
         {
@@ -273,14 +274,14 @@ int printf(const char *restrict format, ...)
         {
             //FIXME - implement in a better way
             format++;
-            unsigned int d = (unsigned int)va_arg(parameters, unsigned int /* char promotes to uint */);
+            unsigned int u = (unsigned int)va_arg(parameters, unsigned int /* char promotes to uint */);
             char tmp[32] = {0};
             if (!maxrem)
             {
                 // TODO: Set errno to EOVERFLOW.
                 return -1;
             }
-            itoa(d, tmp, 10, true);
+            itoa(u, tmp, 10, true);
             if (!print(tmp, strlen(tmp)))
                 return -1;
             written++;
@@ -424,7 +425,7 @@ char *fgets(char *str, int n)
     return str;
 }
 
-int kernel_scanf()
+int kernelScanf()
 {
     while (1)
     {
