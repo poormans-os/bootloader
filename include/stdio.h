@@ -16,6 +16,7 @@ int printf(const char *format, ...);
 void *memset(void *s, const int c, const size_t count);
 size_t strlen(const char *str);
 
+unsigned char getchar();
 char *fgets(char *str, int n);
 int scanf(const char *format, ...);
 int kernelScanf();

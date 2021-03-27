@@ -343,6 +343,8 @@ unsigned char getchar()
     {
     }
 
+    scanfPID = 0;
+
     return scanfBuffer;
 }
 
@@ -420,9 +422,11 @@ char *fgets(char *str, int n)
     for (size_t i = 0; i < n; i++)
     {
         str[i] = getchar();
+        printf("%c\r\n", str[i]);
         if (str[i] == 13)
             break;
     }
+    printf("Exited: %s\r\n", str);
 
     return str;
 }
@@ -436,7 +440,5 @@ int kernelScanf()
         }
 
         scanfBuffer = kernelGetchar();
-
-        scanfPID = 0;
     }
 }

@@ -19,6 +19,7 @@ int bf__run(char *program)
     {
         printf("Please Enter Your Program:\r\n");
         bfmain->program = fgets(bfmain->program, bufferLen);
+        printf("Got %s\r\n", bfmain->program);
     }
 
     putchar('\r');
@@ -71,7 +72,7 @@ int bf__main(bf__data *data)
             bufferCounter++;
             break;
         case ',':
-            // tape[pointer] = getchar(); //TODO
+            tape[pointer] = getchar(); //TODO
             break;
         case '[':
             if (tape[pointer] == 0)
