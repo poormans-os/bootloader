@@ -8,7 +8,7 @@ int bf__run(char *program)
 
     kmalloc(sizeof(bf__data), (void **)&bfmain);
 
-    if (program != NULL)
+    if (program != NULL && strlen(program) != 0)
     {
         printf("Running BrainF*ck\r\n");
         bfmain->program = program;

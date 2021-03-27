@@ -6,6 +6,7 @@
 #define INT_MAX 2147483647
 
 extern EFI_SYSTEM_TABLE *SystemTable;
+extern EFI_BOOT_SERVICES *gBS;
 
 mutex_t printfMutex;
 mutex_t scanfMutex;

@@ -10,6 +10,14 @@
 
 #define FILE_INFO_BUFFER_SIZE 96
 
+typedef enum
+{
+    None = 0,
+    BF,
+    SMP,
+    IO,
+} FileType;
+
 extern EFI_BOOT_SERVICES *gBS;
 
-char *loadfile(IN CHAR16 *path, IN EFI_HANDLE ImageHandle);
+FileType loadfile(char **fileData, IN EFI_HANDLE ImageHandle);

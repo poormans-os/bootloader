@@ -81,7 +81,7 @@ static bool print(const char *data, const size_t length)
     CHAR16 out[150] = {0};
     toLString(out, data, length);
     acquireMutex(&printfMutex);
-    SystemTable->BootServices->Stall(1000);
+    gBS->Stall(1000);
     SystemTable->ConOut->OutputString(SystemTable->ConOut, out);
     releaseMutex(&printfMutex);
     return true;
