@@ -4,30 +4,30 @@ int bf__run(char *program)
 {
     const int bufferLen = 1024;
     bf__data *bfmain = NULL;
+    int result = 0;
 
-    printf("HI bf__run\r\n");
     kmalloc(sizeof(bf__data), (void **)&bfmain);
-    kmalloc(bufferLen, (void **)&bfmain->program);
-    printf("HI bf__run\r\n");
 
     if (program != NULL)
     {
-        free(bfmain->program);
+        printf("Running BrainF*ck\r\n");
         bfmain->program = program;
     }
     else
     {
+        kmalloc(bufferLen, (void **)&bfmain->program);
+        for (size_t i = 0; i < bufferLen; i++)
+            bfmain->program[i] = 0;
+
         printf("Please Enter Your Program:\r\n");
         bfmain->program = fgets(bfmain->program, bufferLen);
-        printf("Got %s\r\n", bfmain->program);
     }
 
-    putchar('\r');
-    putchar('\n');
     bfmain->len = strlen(bfmain->program);
     memset(bfmain->outBuffer, 0, 1024);
-    printf("Running bf__main\r\n");
-    return bf__main(bfmain);
+
+    result = bf__main(bfmain);
+    return result;
 }
 
 int bf__main(bf__data *data)
@@ -41,10 +41,6 @@ int bf__main(bf__data *data)
     unsigned int prgPointer = 0;
     unsigned int bracket = 0;
     short tape[bf__TAPE_LEN] = {0};
-    printf("HI bf__main\r\n");
-    // printf("str: %s\r\n", data->program);
-    // printf("str: %s\r\n", data->program);
-    // printf("str: %s\r\n", data->program);
 
     while (prgPointer < len)
     {
@@ -53,21 +49,29 @@ int bf__main(bf__data *data)
         case '>':
             if (pointer < bf__TAPE_LEN)
                 pointer++;
-            // TODO else END_OF_TAPE
+            else
+                return END_OF_TAPE;
             break;
         case '<':
-            if (pointer != 0)
+            if (pointer > 0)
                 pointer--;
-            // TODD else END_OF_TAPE
+            else
+                return END_OF_TAPE;
             break;
-        case '+': // TODO overflow
-            tape[pointer]++;
+        case '+':
+            if (tape[pointer] < MAX_CHAR_VALUE)
+                tape[pointer]++;
+            else
+                return OVERFLOW;
             break;
-        case '-': // TODO underflow
-            tape[pointer]--;
+        case '-':
+            if (tape[pointer] > 0)
+                tape[pointer]--;
+            else
+                return UNDERFLOW;
             break;
         case '.':
-            putchar(tape[pointer]); //TODO
+            putchar(tape[pointer]);
             outBuffer[bufferCounter] = tape[pointer];
             bufferCounter++;
             break;

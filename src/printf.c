@@ -81,6 +81,7 @@ static bool print(const char *data, const size_t length)
     CHAR16 out[150] = {0};
     toLString(out, data, length);
     acquireMutex(&printfMutex);
+    SystemTable->BootServices->Stall(1000);
     SystemTable->ConOut->OutputString(SystemTable->ConOut, out);
     releaseMutex(&printfMutex);
     return true;
@@ -201,7 +202,7 @@ int printf(const char *restrict format, ...)
 
     while (*format != '\0')
     {
-        size_t maxrem = 2 ^ 32 - written;
+        size_t maxrem = INT_MAX - written;
 
         if (format[0] != '%' || format[1] == '%') //check for entered parameters with %d
         {
@@ -295,11 +296,8 @@ int printf(const char *restrict format, ...)
                 // TODO: Set errno to EOVERFLOW.
                 return -1;
             }
-            for (size_t i = 0; i < len; i++)
-                putchar(str[i]);
-
-            // if (!print(str, len))
-            //     return -1;
+            if (!print(str, len))
+                return -1;
             written += len;
         }
         else
@@ -342,8 +340,6 @@ unsigned char getchar()
     while (scanfPID == 1)
     {
     }
-
-    scanfPID = 0;
 
     return scanfBuffer;
 }
@@ -422,11 +418,9 @@ char *fgets(char *str, int n)
     for (size_t i = 0; i < n; i++)
     {
         str[i] = getchar();
-        printf("%c\r\n", str[i]);
         if (str[i] == 13)
             break;
     }
-    printf("Exited: %s\r\n", str);
 
     return str;
 }
@@ -440,5 +434,6 @@ int kernelScanf()
         }
 
         scanfBuffer = kernelGetchar();
+        scanfPID = 0;
     }
 }

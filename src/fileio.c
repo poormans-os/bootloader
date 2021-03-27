@@ -47,13 +47,14 @@ char *loadfile(IN CHAR16 *path, IN EFI_HANDLE ImageHandle)
         printf("5\r\n");
         return NULL;
     }
+
     if (EFI_SUCCESS != fileHandle->GetInfo(fileHandle, &fileInfoProtocol, &buffSize, fileInfo))
     {
         printf("6 buffsize: %d\r\n", buffSize);
         return NULL;
     }
 
-    Status = kmalloc(fileInfo->FileSize + 1, (void **)&str); //TODO Fix!!!
+    Status = kmalloc(fileInfo->FileSize + 1, (void **)&str);
     if (Status != EFI_SUCCESS)
     {
         printf("7 Status %d\r\n", Status);
@@ -68,13 +69,5 @@ char *loadfile(IN CHAR16 *path, IN EFI_HANDLE ImageHandle)
     }
     str[fileInfo->FileSize] = '\0';
 
-    for (size_t i = 0; i < fileInfo->FileSize; i++)
-    {
-        putchar(str[i]);
-    }
-    printf("\r\n");
-
-    printf("str[0] %c\r\n", str[0]);
-    printf("size %d\r\n", fileInfo->FileSize);
     return str;
 }

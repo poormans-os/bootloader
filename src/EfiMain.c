@@ -57,11 +57,7 @@ EfiMain(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *ST)
     if (NULL == bf__program)
         printf("LoadFile ERROR\r\n");
 
-    printf("program in main: ");
-    for (size_t i = 0; i < strlen(bf__program); i++)
-        putchar(bf__program[i]);
-    printf("\r\n");
-
+    printf("program in main: %s\r\n", bf__program);
     addProcToQueue(bf__run, bf__program);
 
     while (1)
