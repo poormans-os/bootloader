@@ -1,8 +1,13 @@
 #pragma once
 
 #include "stdio.h"
+#include "utils.h"
 
 #define bf__TAPE_LEN 1024
+#define MAX_CHAR_VALUE 255
+#define END_OF_TAPE -1
+#define UNDERFLOW -2
+#define OVERFLOW -3
 
 typedef struct
 {
@@ -23,4 +28,5 @@ enum bf__tokens
     COMMA,         // , TODO Implement input
 };
 
+int bf__run();
 int bf__main();

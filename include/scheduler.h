@@ -5,6 +5,7 @@
 
 #include "stdio.h"
 #include "mutex.h"
+#include "utils.h"
 
 #include <Uefi.h>
 #include <Uefilib.h>
@@ -12,8 +13,6 @@
 #include <MpService.h>
 #include <stdatomic.h>
 
-#define kmalloc(x, y) gBS->AllocatePool(EfiReservedMemoryType, x, y) //IN* , OUT**
-#define free(x) gBS->FreePool(x)
 #define TIMER_PERIOD_MILLISECONDS(Milliseconds) (UINT64)(Milliseconds) * 10000
 
 EFI_MP_SERVICES_PROTOCOL *MpProto;

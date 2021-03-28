@@ -81,9 +81,92 @@ static bool print(const char *data, const size_t length)
     CHAR16 out[150] = {0};
     toLString(out, data, length);
     acquireMutex(&printfMutex);
+    gBS->Stall(1000);
     SystemTable->ConOut->OutputString(SystemTable->ConOut, out);
     releaseMutex(&printfMutex);
     return true;
+}
+
+int isspace(int c)
+{
+    return c == ' ';
+}
+
+int isalpha(int c)
+{
+    return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
+}
+
+int isdigit(int c)
+{
+    return ('0' <= c && c <= '9');
+}
+
+int isupper(int c)
+{
+    return ('A' <= c && c <= 'Z');
+}
+
+#define LONG_MAX ((long)(~0UL >> 1))
+#define LONG_MIN (~LONG_MAX)
+// https://code.woboq.org/gcc/libiberty/strtol.c.html
+long strtol(const char *nptr, char **endptr, unsigned int base)
+{
+    const char *s = nptr;
+    unsigned long acc = 0;
+    unsigned int c = 0;
+    unsigned long cutoff = 0;
+    unsigned int neg = 0, any = 0, cutlim = 0;
+
+    do
+    {
+        c = *s++;
+    } while (isspace(c));
+    if (c == '-')
+    {
+        neg = 1;
+        c = *s++;
+    }
+    else if (c == '+')
+        c = *s++;
+    if ((base == 0 || base == 16) &&
+        c == '0' && (*s == 'x' || *s == 'X'))
+    {
+        c = s[1];
+        s += 2;
+        base = 16;
+    }
+    if (base == 0)
+        base = c == '0' ? 8 : 10;
+    cutoff = neg ? -(unsigned long)LONG_MIN : LONG_MAX;
+    cutlim = cutoff % (unsigned long)base;
+    cutoff /= (unsigned long)base;
+    for (acc = 0, any = 0;; c = *s++)
+    {
+        if (isdigit(c))
+            c -= '0';
+        else if (isalpha(c))
+            c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+        else
+            break;
+        if (c >= base)
+            break;
+        if (any < 0 || acc > cutoff || (acc == cutoff && c > cutlim))
+            any = -1;
+        else
+        {
+            any = 1;
+            acc *= base;
+            acc += c;
+        }
+    }
+    if (any < 0)
+        acc = neg ? LONG_MIN : LONG_MAX;
+    else if (neg)
+        acc = -acc;
+    if (endptr != 0)
+        *endptr = (char *)(any ? s - 1 : nptr);
+    return (acc);
 }
 
 char *convert(unsigned long long num, const int base)
@@ -119,7 +202,7 @@ int printf(const char *restrict format, ...)
 
     while (*format != '\0')
     {
-        size_t maxrem = 2 ^ 32 - written;
+        size_t maxrem = INT_MAX - written;
 
         if (format[0] != '%' || format[1] == '%') //check for entered parameters with %d
         {
@@ -175,7 +258,7 @@ int printf(const char *restrict format, ...)
         {
             //FIXME - implement in a better way
             format++;
-            int d = (char)va_arg(parameters, int /* char promotes to int */);
+            int d = (int)va_arg(parameters, int /* char promotes to int */);
             char tmp[32] = {0};
             if (!maxrem)
             {
@@ -191,14 +274,14 @@ int printf(const char *restrict format, ...)
         {
             //FIXME - implement in a better way
             format++;
-            int d = (char)va_arg(parameters, unsigned int /* char promotes to uint */);
+            unsigned int u = (unsigned int)va_arg(parameters, unsigned int /* char promotes to uint */);
             char tmp[32] = {0};
             if (!maxrem)
             {
                 // TODO: Set errno to EOVERFLOW.
                 return -1;
             }
-            itoa(d, tmp, 10, true);
+            itoa(u, tmp, 10, true);
             if (!print(tmp, strlen(tmp)))
                 return -1;
             written++;
@@ -235,4 +318,122 @@ int printf(const char *restrict format, ...)
 
     va_end(parameters);
     return written;
+}
+
+unsigned short kernelGetchar()
+{
+
+    EFI_INPUT_KEY Key;
+    UINTN KeyEvent = 0;
+
+    SystemTable->BootServices->WaitForEvent(1, &SystemTable->ConIn->WaitForKey, &KeyEvent);
+    SystemTable->ConIn->ReadKeyStroke(SystemTable->ConIn, &Key);
+    SystemTable->ConIn->Reset(SystemTable->ConIn, FALSE);
+    putchar(Key.UnicodeChar);
+
+    return Key.UnicodeChar;
+}
+
+unsigned char getchar()
+{
+    scanfPID = 1;
+    while (scanfPID == 1)
+    {
+    }
+
+    return scanfBuffer;
+}
+
+int scanf(const char *str, ...)
+{
+    // mutex
+    acquireMutex(&scanfMutex);
+
+    va_list vl;
+    int i = 0, j = 0, ret = 0;
+    char buff[100] = {0};
+    char *out_loc;
+
+    char temp = '\0';
+
+    while (temp != 13)
+    {
+        temp = getchar();
+
+        //Result in scanfBuffer
+        if (temp)
+        {
+            buff[i] = temp;
+            i++;
+        }
+    }
+    va_start(vl, str);
+    i = 0;
+    while (str && str[i])
+    {
+        if (str[i] == '%')
+        {
+            i++;
+            switch (str[i])
+            {
+            case 'c':
+            {
+                *(char *)va_arg(vl, char *) = buff[j];
+                j++;
+                ret++;
+                break;
+            }
+            case 'd':
+            {
+                *(int *)va_arg(vl, int *) = (int)strtol(&buff[j], &out_loc, 10);
+                j += out_loc - &buff[j];
+                ret++;
+                break;
+            }
+            case 'x':
+            {
+                *(int *)va_arg(vl, int *) = strtol(&buff[j], &out_loc, 16);
+                j += out_loc - &buff[j];
+                ret++;
+                break;
+            }
+            }
+        }
+        else
+        {
+            buff[j] = str[i];
+            j++;
+        }
+        i++;
+    }
+    va_end(vl);
+
+    // mutex
+    releaseMutex(&scanfMutex);
+    return ret;
+}
+
+char *fgets(char *str, int n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        str[i] = getchar();
+        if (str[i] == 13)
+            break;
+    }
+
+    return str;
+}
+
+int kernelScanf()
+{
+    while (1)
+    {
+        while (!scanfPID)
+        {
+        }
+
+        scanfBuffer = kernelGetchar();
+        scanfPID = 0;
+    }
 }

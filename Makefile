@@ -16,6 +16,7 @@ INCLUDE_DIRS += include
 INCLUDE_DIRS += lang
 
 INCLUDE_DIRS += edk2/MdePkg/Include
+INCLUDE_DIRS += edk2/MdePkg/Include/GUID
 INCLUDE_DIRS += edk2/MdePkg/Include/X64
 INCLUDE_DIRS += edk2/MdePkg/Include/Protocol
 INCLUDE_DIRS += edk2/basetools/source/c/genfw
@@ -67,6 +68,6 @@ build/%.c.o: %.c
 
 run: $(TARGET) 
 	@mkdir -p $(@D)
-	@echo "\033[36m[Runing on qemu]\033[0m"
+	@echo "\033[36m[Running on qemu]\033[0m"
 	@qemu-system-x86_64 -s -L externals -bios externals/OVMF.fd -hdd fat:rw:bin --enable-kvm -cpu host -smp 4,sockets=1,cores=2,threads=2 -m 4096 --monitor stdio
 

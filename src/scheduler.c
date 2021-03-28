@@ -47,9 +47,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
         // Start a Task on the specified Processor.
         Status = MpProto->StartupThisAP(MpProto, (void *)procInfo.procs[coreNum].currentProc->regs.eip, coreNum + 1, procInfo.procs[coreNum].callingEvent, 0, procInfo.procs[coreNum].currentProc->args, (void *)&procInfo.procs[coreNum].status);
         if (Status == EFI_SUCCESS)
-        {
             printf("Event Created On Core %d\r\n", coreNum + 1);
-        }
         else
         {
             printf("Failed to start Task on CPU %d\r\n", coreNum + 1);
@@ -57,9 +55,7 @@ void TimerHandler(IN EFI_EVENT _, IN VOID *Context) //scheduler
         }
     }
     else
-    {
         printf("Event creation failed: %d\r\n", Status);
-    }
 }
 
 EFI_STATUS addProcToQueue(void *func, void *args)
@@ -95,6 +91,8 @@ EFI_STATUS addProcToQueue(void *func, void *args)
 
 EFI_STATUS initScheduler()
 {
+    schedulerMtx = 0;
+
     UINTN NumEnabled = 0;
     UINTN NumProc = 0;
     EFI_PROCESSOR_INFORMATION Tcb = {0};
@@ -102,15 +100,11 @@ EFI_STATUS initScheduler()
     // Find the MP Services Protocol
     EFI_STATUS Status = gBS->LocateProtocol(&gEfiMpServiceProtocolGuid, NULL, (void **)&MpProto);
     if (Status != EFI_SUCCESS)
-    {
         printf("Unable to locate the MpService procotol: %d\r\n", Status);
-    }
     // Get Number of Processors and Number of Enabled Processors
     Status = MpProto->GetNumberOfProcessors(MpProto, &NumProc, &NumEnabled);
     if (Status != EFI_SUCCESS)
-    {
         printf("Unable to get the number of processors: %d\r\n", Status);
-    }
     printf("number of proccesors: %d\r\n", NumProc);
     // Get Processor Health and Location information
 
@@ -164,7 +158,7 @@ EFI_STATUS initScheduler()
     for (size_t i = 0; i < procInfo.numCores; i++)
     {
         procInfo.procs[i].currentProc = NULL; //(void *)-1;
-        Status = gBS->CreateEvent(0, TPL_NOTIFY, NULL, NULL, &procInfo.procs[i].callingEvent);
+        Status = gBS->CreateEvent(0, TPL_APPLICATION, NULL, NULL, &procInfo.procs[i].callingEvent);
         if (Status != EFI_SUCCESS)
             printf("CreateEvent Failed %d\r\n", Status);
 
