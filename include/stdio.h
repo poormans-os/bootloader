@@ -3,16 +3,16 @@
 #include "mutex.h"
 #include <Uefi.h>
 
-#define INT_MAX 2147483647
+#define INT_MAX 2147483647 // Max 32bit int value
 
 extern EFI_SYSTEM_TABLE *SystemTable;
 extern EFI_BOOT_SERVICES *gBS;
 
-mutex_t printfMutex;
+mutex_t printfMutex; //Mutexes
 mutex_t scanfMutex;
 
-int scanfPID; //In Use
-unsigned char scanfBuffer;
+int scanfPID;              //Flag Variable To Signal That A Function Is Waiting For Input
+unsigned char scanfBuffer; //The Input Should Be Stored In This Variable
 
 int printf(const char *format, ...);
 #define putchar(x) printf("%c", x);
