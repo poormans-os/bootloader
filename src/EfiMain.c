@@ -2,7 +2,6 @@
 #include "stdio.h"
 #include "scheduler.h"
 #include "fileio.h"
-
 #include "bf.h"
 
 EFI_SYSTEM_TABLE *SystemTable;
