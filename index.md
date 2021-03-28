@@ -1,37 +1,59 @@
-## Welcome to GitHub Pages
+<h1 align="center"> PMOS </h1>
 
-You can use the [editor on GitHub](https://github.com/poormans-os/bootloader/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+PMOS (poor mans operating-system) Is A Simple UEFI Based Operating System, Using [EDK2](https://github.com/tianocore/edk2), Written In C By Two Students.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## What Can It Do?
 
-### Markdown
+- Basic Input/Output
+- Multi-Threading Using SMP
+- Run [BrainF\*ck](https://en.wikipedia.org/wiki/Brainfuck) Code
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## How To Run
 
-```markdown
-Syntax highlighted code block
+**Note**: You Need To Have At Least Dual Core CPU
 
-# Header 1
-## Header 2
-### Header 3
+1. First You Need To Clone The Code
 
-- Bulleted
-- List
+   ```shell
+   $ git clone https://github.com/poormans-os/bootloader --recurse-submodules
+   ```
 
-1. Numbered
-2. List
+2. Configure Your System
 
-**Bold** and _Italic_ and `Code` text
+   ### windows
 
-[Link](url) and ![Image](src)
-```
+   - You need to have at least build version [_19645.1_](https://www.cnet.com/how-to/change-to-the-fast-ring-for-more-frequent-windows-10-preview-updates/)
+   - [_Qemu_](https://www.qemu.org/download/#windows)
+   - [_Xserver_](https://sourceforge.net/projects/vcxsrv/)
+     - Make Sure The Server Is Running
+   - [_WSL2_](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (with the requirements below)
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+   ### wsl
 
-### Jekyll Themes
+   - [**KVM enabled**](https://boxofcables.dev/accelerated-kvm-guests-on-wsl-2/)
+   - Dependencies [clang-9, nasm, lld-link, make]
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/poormans-os/bootloader/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+   ### linux (Not Tested, Should Work)
 
-### Support or Contact
+   - The same requirements as wsl
+   - [_Qemu_](https://www.qemu.org/download/#linux)
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+3. Run Using Make
+
+   Run BrainF\*ck Code From The File `/bin/main.bf`, If Not Present Run As An Interpreter
+
+   ```shell
+   $ sudo make run
+   ```
+
+   Runs A Simple MultiThreaded Test
+
+   ```shell
+   $ sudo make run-smp
+   ```
+
+   Runs A Simple Echo-Like Program
+
+   ```shell
+   $ sudo make run-io
+   ```
