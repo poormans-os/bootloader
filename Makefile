@@ -5,23 +5,25 @@ FUSE_LD := lld-link
 .PHONY: all clean run
 default: all
 
-TARGET := ../bin/efi/boot/BOOTX64.EFI
+TARGET := bin/efi/boot/BOOTX64.EFI
 
 SRCS += $(shell find src/ -name '*.c')
-# ASM_SRCS += $(shell find src/ -name '*.asm')
+SRCS += $(shell find lang/ -name '*.c')
 
 OBJS := $(SRCS:%=build/%.o)
-ASM_OBJS :=
-# ASM_OBJS := $(ASM_SRCS:%=build/%.o)
 
 INCLUDE_DIRS += include
+INCLUDE_DIRS += lang
+
 INCLUDE_DIRS += edk2/MdePkg/Include
+INCLUDE_DIRS += edk2/MdePkg/Include/GUID
 INCLUDE_DIRS += edk2/MdePkg/Include/X64
 INCLUDE_DIRS += edk2/MdePkg/Include/Protocol
 INCLUDE_DIRS += edk2/basetools/source/c/genfw
 
 INCLUDE_DIRS += edk2/MdePkg/Include/Pi
 INCLUDE_DIRS += edk2/MdePkg/Include/Library
+INCLUDE_DIRS += edk2/MdePkg/Include/Library/baselib
 INCLUDE_DIRS += edk2/MdeModulePkg/Include/Guid
 
 ASFLAGS = -fwin64
@@ -49,6 +51,7 @@ LDFLAGS := \
 
 clean:
 	@rm -rf build
+	@rm -rf obj
 
 all: $(TARGET)
 
@@ -63,7 +66,20 @@ build/%.c.o: %.c
 	@echo "\033[35m[Compiling]\033[0m $@"
 	@$(CLANG) $(CFLAGS) -c -o $@ $<
 
-build/%.asm.o: %.asm
+run: $(TARGET) 
 	@mkdir -p $(@D)
-	@echo "\033[36m[Assembling]\033[0m $@"
-	@$(AS) $(ASFLAGS) -o $@ $<
+	@echo "\033[36m[Running on qemu]\033[0m"
+	@qemu-system-x86_64 -s -L externals -bios externals/OVMF.fd -hdd fat:rw:bin --enable-kvm -cpu host -smp 4,sockets=1,cores=2,threads=2 -m 4096 --monitor stdio
+
+run-smp: $(TARGET) 
+	@mkdir -p $(@D)
+	@touch /bin/SMP.test
+	@echo "\033[36m[Running SMP Test on qemu]\033[0m"
+	@qemu-system-x86_64 -s -L externals -bios externals/OVMF.fd -hdd fat:rw:bin --enable-kvm -cpu host -smp 4,sockets=1,cores=2,threads=2 -m 4096 --monitor stdio
+
+run-io: $(TARGET) 
+	@mkdir -p $(@D)
+	@touch /bin/IO.test
+	@echo "\033[36m[Running IO Test on qemu]\033[0m"
+	@qemu-system-x86_64 -s -L externals -bios externals/OVMF.fd -hdd fat:rw:bin --enable-kvm -cpu host -smp 4,sockets=1,cores=2,threads=2 -m 4096 --monitor stdio
+
