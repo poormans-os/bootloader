@@ -3,6 +3,12 @@
 #include <stdarg.h>
 #include "stdio.h"
 
+/**
+ * @brief Returns The String Length
+ * 
+ * @param str The String
+ * @return size_t The Length
+ */
 size_t strlen(const char *str)
 {
     size_t len = 0;
@@ -11,6 +17,14 @@ size_t strlen(const char *str)
     return len;
 }
 
+/**
+ * @brief Sets The Memory
+ * 
+ * @param s The Address
+ * @param c The Value
+ * @param count How Much To Write
+ * @return void* The s Param
+ */
 void *memset(void *s, const int c, const size_t count)
 {
     for (size_t i = 0; i < count; i++)
@@ -18,7 +32,15 @@ void *memset(void *s, const int c, const size_t count)
     return s;
 }
 
-// Iterative function to implement itoa() function in C
+/**
+ * @brief Converts An Int To Its String Representation
+ * 
+ * @param value The Int
+ * @param str Where To Write To
+ * @param base What Base
+ * @param uint Is The Number Unsigned
+ * @return char* The str param
+ */
 char *itoa(int value, char *str, const int base, const bool uint)
 {
     char *rc;
@@ -57,6 +79,13 @@ char *itoa(int value, char *str, const int base, const bool uint)
     return rc;
 }
 
+/**
+ * @brief Copys A String From 8bit string to 16bit
+ * 
+ * @param dst The Dest String
+ * @param src The Source String
+ * @param len How Many Chars
+ */
 void toLString(CHAR16 *dst, const char *src, const size_t len)
 {
     size_t i = 0;
@@ -68,11 +97,13 @@ void toLString(CHAR16 *dst, const char *src, const size_t len)
     dst[i + 1] = (CHAR16)'\0';
 }
 
-/*
-The function prints a simple string and returns if the string was printed properly
-const char* data - string to print
-size_t length - length of string
-*/
+/**
+ * @brief The function prints a simple string and returns if 
+ * 
+ * @param data The String To Print
+ * @param length How Long Should It Print
+ * @return bool the string was printed properly
+ */
 static bool print(const char *data, const size_t length)
 {
     // if (EFI_SUCCESS == )
@@ -87,21 +118,45 @@ static bool print(const char *data, const size_t length)
     return true;
 }
 
+/**
+ * @brief Is The Char A Space
+ * 
+ * @param c The Char
+ * @return bool  
+ */
 int isspace(int c)
 {
     return c == ' ';
 }
 
+/**
+ * @brief Is The Char An alphabetical Char (A-Z, a-z)
+ * 
+ * @param c The Char
+ * @return bool 
+ */
 int isalpha(int c)
 {
     return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
 }
 
+/**
+ * @brief Is The Char A Digit (0-9)
+ * 
+ * @param c The Char
+ * @return bool
+ */
 int isdigit(int c)
 {
     return ('0' <= c && c <= '9');
 }
 
+/**
+ * @brief Is The Char An Upper Case Letter
+ * 
+ * @param c The char
+ * @return bool 
+ */
 int isupper(int c)
 {
     return ('A' <= c && c <= 'Z');
@@ -110,6 +165,14 @@ int isupper(int c)
 #define LONG_MAX ((long)(~0UL >> 1))
 #define LONG_MIN (~LONG_MAX)
 // https://code.woboq.org/gcc/libiberty/strtol.c.html
+/**
+ * @brief Takes A String And Returns The number Inside The String
+ * 
+ * @param nptr The String
+ * @param endptr Where To Write The String
+ * @param base The Base Of The Number
+ * @return long The Number
+ */
 long strtol(const char *nptr, char **endptr, unsigned int base)
 {
     const char *s = nptr;
@@ -169,6 +232,13 @@ long strtol(const char *nptr, char **endptr, unsigned int base)
     return (acc);
 }
 
+/**
+ * @brief Converts A Number To A String In A Base
+ * 
+ * @param num The Number To Convert
+ * @param base What Base
+ * @return char* The String
+ */
 char *convert(unsigned long long num, const int base)
 {
     static char Representation[] = "0123456789ABCDEF";
@@ -187,12 +257,13 @@ char *convert(unsigned long long num, const int base)
     return (ptr);
 }
 
-/*
-The function will print a string with option to other values(integer, float, char, string). 
-returns how many bytes where written.
-const char* restrict format - string to print
-... - option to enter several parameters such as integer (%d), float (%f), char (%c), string (%s).
-*/
+/**
+ * @brief The function will print a string with option to other values(integer, float, char, string).
+ * 
+ * @param format string to print.
+ * @param ... option to enter several parameters such as integer (%d), float (%f), char (%c), string (%s).
+ * @return int how many bytes where written.
+ */
 int printf(const char *restrict format, ...)
 {
     va_list parameters; //list of parameters
@@ -320,6 +391,11 @@ int printf(const char *restrict format, ...)
     return written;
 }
 
+/**
+ * @brief Simple Getchar, Works Only On The Main-Core
+ * 
+ * @return unsigned short The Char
+ */
 unsigned short kernelGetchar()
 {
 
@@ -334,6 +410,11 @@ unsigned short kernelGetchar()
     return Key.UnicodeChar;
 }
 
+/**
+ * @brief An Async. getchar, Works Only On Non-Main Cores
+ * 
+ * @return unsigned char The Char
+ */
 unsigned char getchar()
 {
     scanfPID = 1;
@@ -344,6 +425,13 @@ unsigned char getchar()
     return scanfBuffer;
 }
 
+/**
+ * @brief Scanf, Works Only Non-Main Cores. Will Get Input From The User, Works Only On Decimal and Hex integer, And Chars
+ * 
+ * @param str The Format String
+ * @param ... option to enter several parameters such, To Write the Response To
+ * @return int How Many Variables Were Written
+ */
 int scanf(const char *str, ...)
 {
     // mutex
@@ -413,6 +501,13 @@ int scanf(const char *str, ...)
     return ret;
 }
 
+/**
+ * @brief Gets A String From The User
+ * 
+ * @param str The Pointer To The String
+ * @param n Max Length To Write
+ * @return char* The str Param
+ */
 char *fgets(char *str, int n)
 {
     for (size_t i = 0; i < n; i++)
@@ -425,6 +520,11 @@ char *fgets(char *str, int n)
     return str;
 }
 
+/**
+ * @brief In Order For The getchar(Thus scanf, and fgets) To Work This Function Should Run, On The Main-Cores
+ * 
+ * @return int Should Never Exit, Put This Function At The End Of EFI_MAIN
+ */
 int kernelScanf()
 {
     while (1)
