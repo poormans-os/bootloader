@@ -15,15 +15,16 @@
 
 #define TIMER_PERIOD_MILLISECONDS(Milliseconds) (UINT64)(Milliseconds) * 10000
 
-EFI_MP_SERVICES_PROTOCOL *MpProto;
+EFI_MP_SERVICES_PROTOCOL *MpProto; //Handler for Multi-Processing.
 
-extern EFI_SYSTEM_TABLE *SystemTable;
-extern EFI_BOOT_SERVICES *gBS;
-extern char tests[5];
+extern EFI_SYSTEM_TABLE *SystemTable; //OS's System Table handler.
+extern EFI_BOOT_SERVICES *gBS;        //OS's Boot Services handler.
+mutex_t schedulerMtx;                 //Mutex to protect the scheduler queue.
 
 typedef int pid_t;
 typedef long long register_t;
 
+//Struct of registers of a processor.
 typedef struct
 {
     register_t rax;
@@ -37,34 +38,36 @@ typedef struct
     register_t eip;
 } registers_t;
 
+//Linked list of all processes (Scheduler Queue).
 typedef struct proc_t
 {
-    pid_t pid;
-    registers_t regs;
-    //void *memLower;
-    //void *memUpper;
-    void *args;
-    struct proc_t *next;
+    pid_t pid;           //ID of the current process.
+    registers_t regs;    //Registers of the current process.
+    void *args;          //Arguments of the current process.
+    struct proc_t *next; //Pointer to the next process in the queue.
 } proc_t;
 
+//Struct of a core (processor).
 typedef struct
 {
-    pid_t pid;
-    proc_t *currentProc;
-    EFI_EVENT callingEvent;
-    UINTN status;
+    pid_t pid;              //ID of the process run by this core.
+    proc_t *currentProc;    //Pointer to the process run by this core.
+    EFI_EVENT callingEvent; //Handler to the event of the core.
+    UINTN status;           //Status of the core- Available(TRUE) \ Working(False).
 } proc_info_t;
 
+//Struct of all processors.
 typedef struct
 {
-    UINTN numCores;
-    proc_info_t *procs;
+    UINTN numCores;     //Number of cores available to process tasks.
+    proc_info_t *procs; //Array of cores.
 } procs_info_t;
 
-static UINT32 pidCount = 1;
-static procs_info_t procInfo;
-static proc_t *procQueue = NULL;
+static UINT32 pidCount = 1;      //First value of PID.
+static procs_info_t procInfo;    //Struct of all cores.
+static proc_t *procQueue = NULL; //Process queue.
 
+//Device to create events and set timer of scheduler
 typedef struct
 {
     UINTN Signature;
@@ -73,9 +76,9 @@ typedef struct
     //
     // Other device specific fields
     //
-} EXAMPLE_DEVICE;
+} SCHEDULER_DEVICE;
 
-EXAMPLE_DEVICE *Device;
+SCHEDULER_DEVICE *Device;
 
 void TimerHandler(IN EFI_EVENT Event, IN VOID *Context);
 EFI_STATUS addProcToQueue(void *func, void *args);

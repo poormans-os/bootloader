@@ -1,19 +1,30 @@
 #include "bf.h"
 
+/**
+ * @brief This function sets everything needed for executing a BF program, and calls for a function that will run it.
+ * 
+ * @param program A BrainF*ck program.
+ * @return int Status of the BF program run.
+ *          0 - Success.
+ *         -1 - Reached end of BF tape.
+ *         -2 - A value on the tape is below 0.
+ *         -3 - A value on the tape is above MAX_CHAR_VALUE.
+ */
 int bf__run(char *program)
 {
     const int bufferLen = 1024;
     bf__data *bfmain = NULL;
     int result = 0;
 
+    //Allocating memory for the BF arguments.
     kmalloc(sizeof(bf__data), (void **)&bfmain);
 
-    if (program != NULL && strlen(program) != 0)
+    if (program != NULL && strlen(program) != 0) //There is content in the BF file.
     {
         printf("Running BrainF*ck\r\n");
         bfmain->program = program;
     }
-    else
+    else //There is no content in the BF file - get a program from user input.
     {
         kmalloc(bufferLen, (void **)&bfmain->program);
         for (size_t i = 0; i < bufferLen; i++)
@@ -26,10 +37,20 @@ int bf__run(char *program)
     bfmain->len = strlen(bfmain->program);
     memset(bfmain->outBuffer, 0, 1024);
 
-    result = bf__main(bfmain);
+    result = bf__main(bfmain); //Calling function that will execute the BF code.
     return result;
 }
 
+/**
+ * @brief This function executes a BrainF*ck code.
+ * 
+ * @param data Arguments - BF Program, Len, Output.
+ * @return int Status of the BF program run.
+ *          0 - Success.
+ *         -1 - Reached end of BF tape.
+ *         -2 - A value on the tape is below 0.
+ *         -3 - A value on the tape is above MAX_CHAR_VALUE.
+ */
 int bf__main(bf__data *data)
 {
     char *program = data->program;
@@ -37,6 +58,7 @@ int bf__main(bf__data *data)
     char *outBuffer = data->outBuffer;
     int bufferCounter = 0;
 
+    //Initializing variables necessary for the BF program.
     unsigned int pointer = 0;
     unsigned int prgPointer = 0;
     unsigned int bracket = 0;
@@ -46,39 +68,39 @@ int bf__main(bf__data *data)
     {
         switch (program[prgPointer])
         {
-        case '>':
+        case '>': //Move to the next index on the tape.
             if (pointer < bf__TAPE_LEN)
                 pointer++;
             else
                 return END_OF_TAPE;
             break;
-        case '<':
+        case '<': //Move to the last index on the tape.
             if (pointer > 0)
                 pointer--;
             else
                 return END_OF_TAPE;
             break;
-        case '+':
+        case '+': //Increase the value of the current index on the tape by 1.
             if (tape[pointer] < MAX_CHAR_VALUE)
                 tape[pointer]++;
             else
                 return OVERFLOW;
             break;
-        case '-':
+        case '-': //Decrease the value of the current index on the tape by 1.
             if (tape[pointer] > 0)
                 tape[pointer]--;
             else
                 return UNDERFLOW;
             break;
-        case '.':
+        case '.': //Put the value of the current index on the tape in the output buffer.
             putchar(tape[pointer]);
             outBuffer[bufferCounter] = tape[pointer];
             bufferCounter++;
             break;
-        case ',':
-            tape[pointer] = getchar(); //TODO
+        case ',': //Get char from user and assign it to the current index on the tape.
+            tape[pointer] = getchar();
             break;
-        case '[':
+        case '[': //Start of a while loop.
             if (tape[pointer] == 0)
             {
                 bracket = 0;
@@ -95,7 +117,7 @@ int bf__main(bf__data *data)
                 }
             }
             break;
-        case ']':
+        case ']': //End of a while loop.
             if (tape[pointer] != 0)
             {
                 bracket = 0;
@@ -115,7 +137,7 @@ int bf__main(bf__data *data)
         default:
             break;
         }
-        prgPointer++;
+        prgPointer++; //Go to the next command of the BF program.
     }
     return 0;
 }

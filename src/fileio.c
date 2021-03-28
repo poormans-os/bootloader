@@ -1,91 +1,101 @@
 #include "fileio.h"
 
+/**
+ * @brief This function reads a file and its content if it has any.
+ * 
+ * @param fileData A pointer to a string that will contain the content of the file.
+ * @param ImageHandle The firmware allocated handle for the UEFI image.
+ * @return FileType - A mark of which type of file was read:
+ *          *None - There was an error while attempting to load a file.
+ *          *BF - The file found contains a BrainF*ck code or no file was found.
+ *          *SMP - The file found calls for a presentation of the SMP POC of the OS.
+ *          *IO - The file found calls for a presentation of the Input-Output mechanism of the OS.
+ */
 FileType loadfile(char **fileData, IN EFI_HANDLE ImageHandle)
 {
+    //Initializing protocol variables necessary for loading a file and reading from it.
     EFI_GUID imageProtocol = EFI_LOADED_IMAGE_PROTOCOL_GUID;
     EFI_GUID pathProtocol = EFI_DEVICE_PATH_PROTOCOL_GUID;
     EFI_GUID fsProtocol = EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID;
     EFI_GUID fileInfoProtocol = EFI_FILE_INFO_ID;
-    EFI_LOADED_IMAGE_PROTOCOL *loadedImage = NULL;
 
+    //Initializing handlers and variables necessary for loading a file and reading from it.
+    EFI_LOADED_IMAGE_PROTOCOL *loadedImage = NULL;
     EFI_DEVICE_PATH_PROTOCOL *devicePath = NULL;
     EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *volume = NULL;
     EFI_FILE_PROTOCOL *rootFS = NULL;
     EFI_FILE_PROTOCOL *fileHandle = NULL;
-    UINTN buffSize = FILE_INFO_BUFFER_SIZE;
     EFI_FILE_INFO *fileInfo = NULL;
+    UINTN buffSize = FILE_INFO_BUFFER_SIZE;
 
-    EFI_STATUS Status = EFI_SUCCESS;
+    char *str = NULL;     //Variable the will hold the file's content.
+    FileType type = None; //Variable of the return value.
 
-    char *str = NULL;
-    FileType type = None;
-
+    //Loading UEFI protocol handlers.
     if (EFI_SUCCESS != gBS->HandleProtocol(ImageHandle, &imageProtocol, (void **)&loadedImage))
     {
-        printf("1\r\n");
+        printf("LoadFile Error 1\r\n");
         return None;
     }
-
     if (EFI_SUCCESS != gBS->HandleProtocol(loadedImage->DeviceHandle, &pathProtocol, (void **)&devicePath))
     {
-        printf("2\r\n");
+        printf("LoadFile Error 2\r\n");
         return None;
     }
-
     if (EFI_SUCCESS != gBS->HandleProtocol(loadedImage->DeviceHandle, &fsProtocol, (void **)&volume))
     {
-        printf("3\r\n");
+        printf("LoadFile Error 3\r\n");
         return None;
     }
-
     if (EFI_SUCCESS != volume->OpenVolume(volume, &rootFS))
     {
-        printf("4\r\n");
+        printf("LoadFile Error 4\r\n");
         return None;
     }
 
+    //Attempting to open 3 types of files.
     if (EFI_SUCCESS == rootFS->Open(rootFS, &fileHandle, L"main.bf", EFI_FILE_MODE_READ, 0))
     {
         printf("Running BF\r\n");
-        type = BF;
+        type = BF; //This type of file might have content in it so don't return from the function yet.
     }
     else if (EFI_SUCCESS == rootFS->Open(rootFS, &fileHandle, L"SMP.test", EFI_FILE_MODE_READ, 0))
     {
         printf("Running smp test\r\n");
-        return SMP;
+        return SMP; //This type of file doesn't have relevant content.
     }
     else if (EFI_SUCCESS == rootFS->Open(rootFS, &fileHandle, L"IO.test", EFI_FILE_MODE_READ, 0))
     {
         printf("Running io test\r\n");
-        return IO;
+        return IO; //This type of file doesn't have relevant content.
     }
     else
     {
-        printf("5\r\n");
-        return None;
+        return BF; //If there is no file, get BrainF*ck code through user input.
     }
 
+    //Getting information about a file into fileInfo buffer.
     if (EFI_SUCCESS != fileHandle->GetInfo(fileHandle, &fileInfoProtocol, &buffSize, fileInfo))
     {
-        printf("6 buffsize: %d\r\n", buffSize);
+        printf("LoadFile Error 5\r\n");
         return None;
     }
 
-    Status = kmalloc(fileInfo->FileSize + 1, (void **)&str);
-    if (Status != EFI_SUCCESS)
+    //Allocating memory to the file content buffer according to the size of the file's content.
+    if (EFI_SUCCESS != kmalloc(fileInfo->FileSize + 1, (void **)&str))
     {
-        printf("7 Status %d\r\n", Status);
+        printf("LoadFile Error 6\r\n");
         return None;
     }
 
-    Status = fileHandle->Read(fileHandle, (void *)&fileInfo->FileSize, (void *)str);
-    if (Status != EFI_SUCCESS)
+    //Reading from the file's content to the buffer.
+    if (EFI_SUCCESS != fileHandle->Read(fileHandle, (void *)&fileInfo->FileSize, (void *)str))
     {
-        printf("8 Status %d\r\n", Status);
+        printf("LoadFile Error 7\r\n");
         return None;
     }
-    str[fileInfo->FileSize] = '\0';
-    *fileData = str;
+    str[fileInfo->FileSize] = '\0'; //End of buffer.
+    *fileData = str;                //Setting the file data string to the file's content buffer.
 
-    return type;
+    return type; //returning the type of the file.
 }
