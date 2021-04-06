@@ -73,13 +73,15 @@ run: $(TARGET)
 
 run-smp: $(TARGET) 
 	@mkdir -p $(@D)
-	@touch /bin/SMP.test
+	@touch ./bin/SMP.test
 	@echo "\033[36m[Running SMP Test on qemu]\033[0m"
 	@qemu-system-x86_64 -s -L externals -bios externals/OVMF.fd -hdd fat:rw:bin --enable-kvm -cpu host -smp 4,sockets=1,cores=2,threads=2 -m 4096 --monitor stdio
+	@rm ./bin/SMP.test
 
 run-io: $(TARGET) 
 	@mkdir -p $(@D)
-	@touch /bin/IO.test
+	@touch ./bin/IO.test
 	@echo "\033[36m[Running IO Test on qemu]\033[0m"
 	@qemu-system-x86_64 -s -L externals -bios externals/OVMF.fd -hdd fat:rw:bin --enable-kvm -cpu host -smp 4,sockets=1,cores=2,threads=2 -m 4096 --monitor stdio
+	@rm ./bin/IO.test
 
